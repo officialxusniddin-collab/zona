@@ -1,0 +1,67 @@
+{
+    "expo":  {
+                 "name":  "Zona",
+                 "slug":  "zona",
+                 "version":  "1.0.0",
+                 "orientation":  "portrait",
+                 "android":  {
+                                 "package":  "uz.zona.app",
+                                 "config":  {
+                                                "googleMaps":  {
+                                                                   "apiKey":  "AIzaSyBRUe-leQlt3k9ns-ZdQpiuQqchhliDkxs"
+                                                               }
+                                            },
+                                 "permissions":  [
+                                                     "ACCESS_COARSE_LOCATION",
+                                                     "ACCESS_FINE_LOCATION",
+                                                     "ACCESS_BACKGROUND_LOCATION",
+                                                     "FOREGROUND_SERVICE",
+                                                     "FOREGROUND_SERVICE_LOCATION",
+                                                     "WAKE_LOCK",
+                                                     "POST_NOTIFICATIONS",
+                                                     "VIBRATE"
+                                                 ],
+                                 "adaptiveIcon":  {
+                                                      "foregroundImage":  "./assets/adaptive-icon.png",
+                                                      "backgroundColor":  "#070B10"
+                                                  },
+                                 "versionCode":  1
+                             },
+                 "plugins":  [
+                                 [
+                                     "expo-location",
+                                     {
+                                         "locationAlwaysAndWhenInUsePermission":  "Zona yurgan yo\u0027lingizni chizish va hudud egallash uchun joylashuvdan foydalanadi.",
+                                         "locationWhenInUsePermission":  "Zona yurgan yo\u0027lingizni chizish uchun joylashuvdan foydalanadi.",
+                                         "isAndroidBackgroundLocationEnabled":  true,
+                                         "isAndroidForegroundServiceEnabled":  true
+                                     }
+                                 ],
+                                 [
+                                     "expo-image-picker",
+                                     {
+                                         "photosPermission":  "Zona zonangizga rasm qo\u0027yish uchun galereyaga ruxsat so\u0027raydi."
+                                     }
+                                 ],
+                                 "expo-audio",
+                                 "@maplibre/maplibre-react-native",
+                                 "expo-asset",
+                                 "expo-notifications"
+                             ],
+                 "extra":  {
+                               "eas":  {
+                                           "projectId":  "50e5967b-2900-4e82-a91d-a8b389cf520c"
+                                       }
+                           },
+                 "icon":  "./assets/icon.png",
+                 "splash":  {
+                                "image":  "./assets/splash-icon.png",
+                                "resizeMode":  "contain",
+                                "backgroundColor":  "#070B10"
+                            },
+                 "web":  {
+                             "favicon":  "./assets/favicon.png"
+                         },
+                 "userInterfaceStyle":  "light"
+             }
+}
