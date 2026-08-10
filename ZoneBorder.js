@@ -87,6 +87,21 @@ function lineOf(cs) {
 }
 
 /* [tashqi, tana, yadro] */
+
+/* -- DARAJA EFFEKTLARI --
+   Har daraja oldingisiga qatlam qo'shadi, faqat qalinlik emas.
+   1: sodda ikki qatlam            2: + porlash, nafas
+   3: + tashqi gaz, oqim           4: + halo, yuguruvchi yorug'lik
+   5: + uchqun, qarama-qarshi oqim, rang o'yini                        */
+const TIER_FX = {
+  1: { haze: 0,    glow: 0.55, body: 0.85, core: 0.9,  breath: 0,    halo: 0,    spark: 0, dual: 0, hue: 0    },
+  2: { haze: 0.5,  glow: 0.85, body: 1.0,  core: 1.0,  breath: 0.10, halo: 0,    spark: 0, dual: 0, hue: 0    },
+  3: { haze: 1.0,  glow: 1.15, body: 1.15, core: 1.1,  breath: 0.16, halo: 0.35, spark: 0, dual: 0, hue: 0    },
+  4: { haze: 1.4,  glow: 1.45, body: 1.3,  core: 1.2,  breath: 0.22, halo: 0.75, spark: 0, dual: 1, hue: 0.04 },
+  5: { haze: 1.9,  glow: 1.85, body: 1.5,  core: 1.35, breath: 0.30, halo: 1.15, spark: 1, dual: 1, hue: 0.09 },
+};
+function tfx(t) { return TIER_FX[Math.max(1, Math.min(5, t || 1))]; }
+
 const PAL = [
   ['#00FF41', '#7BFF9C', '#EAFFF0'],
   ['#7B2CFF', '#B884FF', '#F2E8FF'],
@@ -108,43 +123,43 @@ export const BY_CODE = {
   simple_2: { pal: 11, mode: 'still',  amp: 0,   K: 6,  flow: 0, tier: 1 },
   simple_3: { pal: 12, mode: 'still',  amp: 0,   K: 4,  flow: 0, tier: 1 },
 
-  energy_1: { pal: 0,  mode: 'strike', hold: 3, amp: 1.0, K: 9,  flow: 0, tier: 1 },
-  energy_2: { pal: 6,  mode: 'flow',   hold: 6, amp: 0.5, K: 6,  flow: 1, tier: 1 },
+  energy_1: { pal: 0,  mode: 'strike', hold: 3, amp: 1.0, K: 9,  flow: 0, tier: 2 },
+  energy_2: { pal: 6,  mode: 'flow',   hold: 6, amp: 0.5, K: 6,  flow: 1, tier: 2 },
   energy_3: { pal: 8,  mode: 'flow',   hold: 7, amp: 0.6, K: 8,  flow: 1, tier: 2 },
-  energy_4: { pal: 0,  mode: 'strike', hold: 2, amp: 1.3, K: 12, flow: 0, tier: 3 },
+  energy_4: { pal: 0,  mode: 'strike', hold: 2, amp: 1.3, K: 12, flow: 0, tier: 2 },
 
-  nature_1: { pal: 4,  mode: 'flow',   hold: 9, amp: 0.9, K: 5,  flow: 1, tier: 2 },
+  nature_1: { pal: 4,  mode: 'flow',   hold: 9, amp: 0.9, K: 5,  flow: 1, tier: 3 },
   nature_2: { pal: 2,  mode: 'flow',   hold: 5, amp: 1.0, K: 11, flow: 1, tier: 3 },
-  nature_3: { pal: 5,  mode: 'flow',   hold: 8, amp: 0.5, K: 7,  flow: 1, tier: 2 },
+  nature_3: { pal: 5,  mode: 'flow',   hold: 8, amp: 0.5, K: 7,  flow: 1, tier: 3 },
 
-  neon_1:   { pal: 8,  mode: 'flow',   hold: 11, amp: 0.45, K: 5, flow: 1, tier: 2 },
-  neon_2:   { pal: 1,  mode: 'flow',   hold: 6,  amp: 0.7,  K: 6, flow: 1, tier: 3 },
-  neon_3:   { pal: 9,  mode: 'flow',   hold: 7,  amp: 0.9,  K: 8, flow: 1, tier: 3 },
+  neon_1:   { pal: 8,  mode: 'flow',   hold: 11, amp: 0.45, K: 5, flow: 1, tier: 4 },
+  neon_2:   { pal: 1,  mode: 'flow',   hold: 6,  amp: 0.7,  K: 6, flow: 1, tier: 4 },
+  neon_3:   { pal: 9,  mode: 'flow',   hold: 7,  amp: 0.9,  K: 8, flow: 1, tier: 4 },
 
-  legend_1: { pal: 7,  mode: 'strike', hold: 2,  amp: 1.6,  K: 7, flow: 0, tier: 3 },
+  legend_1: { pal: 7,  mode: 'strike', hold: 2,  amp: 1.6,  K: 7, flow: 0, tier: 5 },
 
-  energy_5: { pal: 10, mode: 'flow',   hold: 8,  amp: 0.35, K: 6,  flow: 1, tier: 1 },
+  energy_5: { pal: 10, mode: 'flow',   hold: 8,  amp: 0.35, K: 6,  flow: 1, tier: 2 },
   energy_6: { pal: 0,  mode: 'flow',   hold: 7,  amp: 0.75, K: 5,  flow: 1, tier: 2 },
   energy_7: { pal: 6,  mode: 'strike', hold: 4,  amp: 0.85, K: 9,  flow: 0, tier: 2 },
-  energy_8: { pal: 6,  mode: 'still',  amp: 0,   K: 6,  flow: 0, tier: 1 },
+  energy_8: { pal: 6,  mode: 'still',  amp: 0,   K: 6,  flow: 0, tier: 2 },
 
-  nature_4: { pal: 3,  mode: 'flow',   hold: 10, amp: 1.0,  K: 4,  flow: 1, tier: 2 },
-  nature_5: { pal: 0,  mode: 'flow',   hold: 12, amp: 0.4,  K: 7,  flow: 1, tier: 2 },
+  nature_4: { pal: 3,  mode: 'flow',   hold: 10, amp: 1.0,  K: 4,  flow: 1, tier: 3 },
+  nature_5: { pal: 0,  mode: 'flow',   hold: 12, amp: 0.4,  K: 7,  flow: 1, tier: 3 },
   nature_6: { pal: 7,  mode: 'flow',   hold: 6,  amp: 1.2,  K: 10, flow: 1, tier: 3 },
 
-  neon_4:   { pal: 3,  mode: 'flow',   hold: 7,  amp: 0.5,  K: 5,  flow: 1, tier: 2 },
-  neon_5:   { pal: 5,  mode: 'strike', hold: 3,  amp: 0.8,  K: 8,  flow: 0, tier: 3 },
-  neon_6:   { pal: 12, mode: 'flow',   hold: 9,  amp: 0.6,  K: 6,  flow: 1, tier: 3 },
-  neon_7:   { pal: 4,  mode: 'strike', hold: 3,  amp: 0.9,  K: 12, flow: 0, tier: 3 },
+  neon_4:   { pal: 3,  mode: 'flow',   hold: 7,  amp: 0.5,  K: 5,  flow: 1, tier: 4 },
+  neon_5:   { pal: 5,  mode: 'strike', hold: 3,  amp: 0.8,  K: 8,  flow: 0, tier: 4 },
+  neon_6:   { pal: 12, mode: 'flow',   hold: 9,  amp: 0.6,  K: 6,  flow: 1, tier: 4 },
+  neon_7:   { pal: 4,  mode: 'strike', hold: 3,  amp: 0.9,  K: 12, flow: 0, tier: 4 },
 
-  legend_2: { pal: 2,  mode: 'strike', hold: 2,  amp: 1.5,  K: 8,  flow: 0, tier: 3 },
-  legend_3: { pal: 7,  mode: 'strike', hold: 3,  amp: 1.2,  K: 7,  flow: 0, tier: 3 },
-  legend_4: { pal: 2,  mode: 'strike', hold: 2,  amp: 1.7,  K: 6,  flow: 0, tier: 3 },
-  legend_5: { pal: 1,  mode: 'flow',   hold: 5,  amp: 0.9,  K: 7,  flow: 1, tier: 3 },
-  legend_6: { pal: 8,  mode: 'strike', hold: 2,  amp: 1.4,  K: 9,  flow: 0, tier: 3 },
-  legend_7: { pal: 7,  mode: 'flow',   hold: 4,  amp: 0.7,  K: 5,  flow: 1, tier: 3 },
-  legend_8: { pal: 10, mode: 'strike', hold: 2,  amp: 1.8,  K: 5,  flow: 0, tier: 3 },
-  legend_9: { pal: 7,  mode: 'strike', hold: 2,  amp: 1.6,  K: 8,  flow: 0, tier: 3 },
+  legend_2: { pal: 2,  mode: 'strike', hold: 2,  amp: 1.5,  K: 8,  flow: 0, tier: 5 },
+  legend_3: { pal: 7,  mode: 'strike', hold: 3,  amp: 1.2,  K: 7,  flow: 0, tier: 5 },
+  legend_4: { pal: 2,  mode: 'strike', hold: 2,  amp: 1.7,  K: 6,  flow: 0, tier: 5 },
+  legend_5: { pal: 1,  mode: 'flow',   hold: 5,  amp: 0.9,  K: 7,  flow: 1, tier: 5 },
+  legend_6: { pal: 8,  mode: 'strike', hold: 2,  amp: 1.4,  K: 9,  flow: 0, tier: 5 },
+  legend_7: { pal: 7,  mode: 'flow',   hold: 4,  amp: 0.7,  K: 5,  flow: 1, tier: 5 },
+  legend_8: { pal: 10, mode: 'strike', hold: 2,  amp: 1.8,  K: 5,  flow: 0, tier: 5 },
+  legend_9: { pal: 7,  mode: 'strike', hold: 2,  amp: 1.6,  K: 8,  flow: 0, tier: 5 },
 };
 
 const CFG = [
@@ -254,10 +269,13 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
     ? 0.72 + rnd(Math.floor(t / 2), 5) * 0.28
     : 0.86 + Math.sin(t * 0.14) * 0.14;
 
-  const wHaze = 30 + lv * 13;
-  const wGlow = 15 + lv * 7;
-  const wBody = 6 + lv * 2.8;
-  const wCore = 2.0 + lv * 0.8;
+  const F = tfx(tier);
+  const br = F.breath ? (1 + Math.sin(t * 0.055) * F.breath) : 1;
+  const wHaze = (30 + lv * 13) * (0.4 + F.haze * 0.6) * br;
+  const wGlow = (15 + lv * 7) * F.glow * br;
+  const wBody = (6 + lv * 2.8) * F.body;
+  const wCore = (2.0 + lv * 0.8) * F.core;
+  const wHalo = (46 + lv * 20) * F.halo;
 
   /* oqim gradienti */
   const ph = (t * 0.030) % 1;
@@ -283,10 +301,47 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
     return s;
   };
 
+  /* teskari yonalishdagi ikkinchi oqim */
+  const gradBack = () => {
+    const p2 = 1 - ((t * 0.021) % 1);
+    const raw = [];
+    const push = (x, col) => { raw.push([Math.max(0, Math.min(1, x)), col]); };
+    push(0, a(cCore, 0));
+    push(p2 - 0.13, a(cCore, 0));
+    push(p2 - 0.05, a(cCore, 0.55));
+    push(p2, bright(cCore, 0.85));
+    push(p2 + 0.05, a(cCore, 0.4));
+    push(p2 + 0.13, a(cCore, 0));
+    push(1, a(cCore, 0));
+    raw.sort((x, y) => x[0] - y[0]);
+    const pts = [];
+    for (const r of raw) {
+      if (pts.length === 0) { pts.push(r); continue; }
+      if (r[0] > pts[pts.length - 1][0] + 0.0009) pts.push(r);
+    }
+    if (pts.length < 2) return a(cCore, 0.4);
+    if (pts[0][0] > 0) pts.unshift([0, pts[0][1]]);
+    const out = ['interpolate', ['linear'], ['line-progress']];
+    for (const p of pts) { out.push(p[0]); out.push(p[1]); }
+    return out;
+  };
+
   return (
     <>
       {/* asosiy chaqmoq */}
       <GeoJSONSource id={sd} data={lineOf(bolt)} lineMetrics={true}>
+        {/* 0) tashqi halo - 3-darajadan */}
+        {F.halo > 0 ? (
+          <Layer id={sd + '_halo'} type="line" beforeId="logoLay"
+            layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+            paint={{
+              'line-color': cOut,
+              'line-width': zw(wHalo),
+              'line-opacity': 0.03 * F.halo * fl,
+              'line-blur': wHalo,
+            }} />
+        ) : null}
+
         {/* 1) eng keng gaz */}
         <Layer id={sd + '_h1'} type="line" beforeId="logoLay"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
@@ -336,6 +391,17 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
               'line-blur': 1.6,
             }} />
         )}
+
+        {/* 4.5) qarama-qarshi oqim - 4-darajadan */}
+        {F.dual ? (
+          <Layer id={sd + '_dual'} type="line" beforeId="logoLay"
+            layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+            paint={{
+              'line-width': zw(wBody * 0.42),
+              'line-blur': 2.2,
+              'line-gradient': gradBack(),
+            }} />
+        ) : null}
 
         {/* 5) yadro - deyarli oq */}
         <Layer id={sd + '_c'} type="line" beforeId="logoLay"

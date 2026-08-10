@@ -458,7 +458,7 @@ function ZonaApp() {
     try {
       const me = meStats ? meStats.name : 'Men';
       const ha = meStats ? meStats.hectares : 0;
-      await Share.share({ message: T('share_invite', 'ZONA - koʻchada yurib hudud egallash oʻyini!') + NL + NL + me + ' allaqachon ' + ha + ' gektar egalladi.' + NL + 'Qoshil va uning hududini bosib ol!' + NL + NL + (apkRef.current || APK_FALLBACK) });
+      await Share.share({ message: TX('share_invite', 'ZONA - koʻchada yurib hudud egallash oʻyini!') + NL + NL + me + ' allaqachon ' + ha + ' gektar egalladi.' + NL + 'Qoshil va uning hududini bosib ol!' + NL + NL + (apkRef.current || APK_FALLBACK) });
     } catch (e) {}
   };
   const shareZone = async () => {
@@ -473,7 +473,7 @@ function ZonaApp() {
       const me = meStats ? meStats.name : 'Men';
       const ha = meStats ? meStats.hectares : 0;
       const zn = meStats ? meStats.zones : 0;
-      await Share.share({ message: (T('share_result', 'ZONA oʻyinida hudud egalladim!').replace('hudud', ha + ' gektar hudud')) + ' (' + zn + ' ta zona)' + NL + NL + (apkRef.current || APK_FALLBACK) });
+      await Share.share({ message: (TX('share_result', 'ZONA oʻyinida hudud egalladim!').replace('hudud', ha + ' gektar hudud')) + ' (' + zn + ' ta zona)' + NL + NL + (apkRef.current || APK_FALLBACK) });
     } catch (e) {}
   };
   useEffect(() => {
@@ -517,7 +517,7 @@ function ZonaApp() {
           const age = Date.now() - (t.at || 0);
           if (age < 30 * 60 * 1000) {
             resumeNow();
-            setTimeout(() => say(T('resumed', 'Yoʻlingiz davom etmoqda'), 'ok'), 900);
+            setTimeout(() => say(TX('resumed', 'Yoʻlingiz davom etmoqda'), 'ok'), 900);
           } else {
             Alert.alert(
               'Tugallanmagan yoʻl',
@@ -906,7 +906,7 @@ function ZonaApp() {
     return def !== undefined ? def : true;
   };
 
-  const T = (key, def) => {
+  const TX = (key, def) => {
     const k = cfgRef.current || cfg;
     if (k && k.texts && k.texts[key]) return k.texts[key];
     return def;
@@ -1553,6 +1553,16 @@ function ZonaApp() {
     setCelebrate({ ha: ha, cap: 0 });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
+    if (!u) {
+      /* hisob yoq - zona yoqolmasin, navbatga tushsin */
+      const base0 = zoneStartRef.current || startTimeRef.current;
+      const dur0 = Math.max(Math.round((Date.now() - base0) / 1000), 1);
+      addPending({ id: newId, loop: p.loop, area: p.area, dur: dur0,
+        dist: distRef.current || 0, mocked: !!mockedRef.current, at: Date.now() })
+        .then((n) => setPendCount(n)).catch(() => {});
+      sendingRef.current = false;
+      setTimeout(() => say('Zona saqlandi - hisobga kiring', 'warn'), 500);
+    }
     if (u) {
       const base = zoneStartRef.current || startTimeRef.current;
       const dur = Math.max(Math.round((Date.now() - base) / 1000), 1);
@@ -1793,7 +1803,7 @@ function ZonaApp() {
     try {
       const lvl = await Battery.getBatteryLevelAsync();
       const saver = await Battery.isLowPowerModeEnabledAsync();
-      if (saver) setWarn(T('battery', 'Batareya tejash yoqilgan - GPS uzilishi mumkin'));
+      if (saver) setWarn(TX('battery', 'Batareya tejash yoqilgan - GPS uzilishi mumkin'));
       else if (lvl > 0 && lvl < 0.15) setWarn('Batareya ' + Math.round(lvl * 100) + '% - quvvat oling');
     } catch (e) {}
  
@@ -1829,14 +1839,14 @@ function ZonaApp() {
       pausesUpdatesAutomatically: false,
       });
     } catch (e) {
-      setWarn(T('start_fail', 'Yozuvni boshlab boʻlmadi - GPS sozlamalarini tekshiring'));
+      setWarn(TX('start_fail', 'Yozuvni boshlab boʻlmadi - GPS sozlamalarini tekshiring'));
       sfx('lost');
       return;
     }
  
-    if (!locRef.current) setWarn(T('gps_wait', 'GPS hali topilmadi - biroz kuting'));
+    if (!locRef.current) setWarn(TX('gps_wait', 'GPS hali topilmadi - biroz kuting'));
     else {
-      setWarn(T('pocket', 'Telefonni choʻntakka soling - yoʻlingiz yozilaveradi. Vaqti-vaqti bilan ilovaga qarab turing.'));
+      setWarn(TX('pocket', 'Telefonni choʻntakka soling - yoʻlingiz yozilaveradi. Vaqti-vaqti bilan ilovaga qarab turing.'));
       setTimeout(() => setWarn((w) => (w && w.indexOf('Telefonni choʻntakka') === 0) ? null : w), 8000);
     }
     startTimeRef.current = Date.now();
@@ -1868,7 +1878,7 @@ function ZonaApp() {
     if (pathRef.current.length > 1) {
       saveTrack({ path: pathRef.current, dist: distRef.current,
         sec: secRef.current, start: startTimeRef.current, at: Date.now() });
-      setTimeout(() => say(T('saved', 'Yoʻlingiz saqlandi - START bosib davom eting'), 'ok'), 500);
+      setTimeout(() => say(TX('saved', 'Yoʻlingiz saqlandi - START bosib davom eting'), 'ok'), 500);
     } else {
       clearTrack();
     }

@@ -98,6 +98,16 @@ function shapeOk(loop) {
 
 export function findLoop(fullPath, minPoints = 6, closeDist) {
   if (closeDist == null) closeDist = CLOSE_DIST;
+  /* tez harakatda nuqtalar siyrak tushadi - yopilish masofasi kengayadi */
+  try {
+    const nn = fullPath.length;
+    if (nn >= 4) {
+      let sd = 0;
+      for (let q = nn - 3; q < nn; q++) sd += distanceM(fullPath[q - 1], fullPath[q]);
+      const spdClose = sd / 3;
+      if (spdClose > closeDist) closeDist = Math.min(spdClose * 1.5, 60);
+    }
+  } catch (e) {}
   // Juda uzun yo'lda faqat oxirgi qismni tekshiramiz (tezlik uchun)
   const path = fullPath;
   const off = 0;
