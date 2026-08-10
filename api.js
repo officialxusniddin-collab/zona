@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-let BASE = 'https://donagame.duckdns.org/zona';
-const BASE_ALT = 'http://167.233.210.10:8000';
+let BASE = 'https://zonagame.uz/zona';
+const BASE_ALT = 'https://donagame.duckdns.org/zona';
 const BASE_KEY = 'zona_base_v1';
 
 export async function pickBase() {

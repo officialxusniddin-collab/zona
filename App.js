@@ -516,7 +516,10 @@ function ZonaApp() {
 
           const age = Date.now() - (t.at || 0);
           if (age < 30 * 60 * 1000) {
-            resumeNow();
+            Location.hasServicesEnabledAsync().then((on) => {
+              if (on) resumeNow();
+              else { clearTrack(); setWarn('Joylashuv oʻchirilgan - START bosib qayta boshlang'); }
+            }).catch(() => { resumeNow(); });
             setTimeout(() => say(TX('resumed', 'Yoʻlingiz davom etmoqda'), 'ok'), 900);
           } else {
             Alert.alert(
@@ -1616,6 +1619,12 @@ function ZonaApp() {
     const cutAt = (p.cutIndex != null && p.cutIndex >= 0) ? p.cutIndex : 0;
     const tail = pathRef.current.slice(cutAt);
     resetLoopCache();
+    /* fon buferi tozalanmasa eski nuqtalar togri chiziq chizadi */
+    try { clearBuffer(); } catch (e) {}
+    try { clearBgBuffer(); } catch (e) {}
+    readIndexRef.current = 0;
+    distBuf.current = [];
+    distRefPt.current = null;
     pathRef.current = lastPt ? [lastPt] : [];
     pendingRef.current = null;
     setPending(null);
