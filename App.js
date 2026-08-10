@@ -815,6 +815,14 @@ function ZonaApp() {
 
   useEffect(() => {
     loadPending().then((l) => setPendCount(l.length)).catch(() => {});
+    AsyncStorage.getItem('zona_skipped').then((raw) => {
+      if (!raw) return;
+      try {
+        const arr = JSON.parse(raw) || [];
+        const fresh = arr.filter((q) => Date.now() - (q.at || 0) < 6 * 3600 * 1000);
+        if (fresh.length) { skippedRef.current = fresh; setSkipCount(fresh.length); }
+      } catch (e) {}
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -1674,6 +1682,7 @@ function ZonaApp() {
       if (!dup) {
         skippedRef.current = [...skippedRef.current, { loop: pz.loop, area: pz.area, at: Date.now() }].slice(-8);
         setSkipCount(skippedRef.current.length);
+        AsyncStorage.setItem('zona_skipped', JSON.stringify(skippedRef.current)).catch(() => {});
       }
     }
     dismissedAreaRef.current = pendingRef.current ? pendingRef.current.area : 0;
@@ -3465,7 +3474,7 @@ function ZonaApp() {
           ) : null}
 
           <TouchableOpacity style={[styles.closeBtn, { borderColor: c.panelBorder }]}
-            onPress={() => { skippedRef.current = []; setSkipCount(0); setShowSkipped(false); }}>
+            onPress={() => { skippedRef.current = []; setSkipCount(0); AsyncStorage.removeItem('zona_skipped').catch(() => {}); setShowSkipped(false); }}>
             <Text style={{ color: c.textSub, fontSize: 14 }}>Kerak emas</Text>
           </TouchableOpacity>
         </Sheet>
