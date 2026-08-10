@@ -350,6 +350,9 @@ function ZonaApp() {
   const pendingRef = useRef(null);
   const dismissedRef = useRef(0);
   const dismissedAreaRef = useRef(0);
+  const skippedRef = useRef([]);
+  const [skipCount, setSkipCount] = useState(0);
+  const [showSkipped, setShowSkipped] = useState(false);
   const lastZoneAtRef = useRef(0);
   const zonesRef = useRef([]);
   const toastAnim = useRef(new Animated.Value(0)).current;
@@ -1631,7 +1634,48 @@ function ZonaApp() {
     setPath(smoothPath(pathRef.current));
   };
 
+  const takeSkipped = (list) => {
+    if (!list || !list.length) return;
+    const u = userRef.current;
+    setShowSkipped(false);
+    let sent = 0;
+    list.forEach(function (z, ix) {
+      setTimeout(function () {
+        const nid = Date.now() + ix;
+        setZones((old) => {
+          const nz = [...old, { id: nid, coords: z.loop, area: z.area }];
+          saveZones(nz);
+          return nz;
+        });
+        const dur = Math.max(Math.round((Date.now() - (z.at || Date.now() - 600000)) / 1000), 120);
+        if (u) {
+          pushZone(u.user_id, z.loop, z.area, { duration: dur, distance: 0, mocked: false })
+            .then(() => { sent++; setTimeout(() => refreshRemote(), 600); })
+            .catch(() => {
+              addPending({ id: nid, loop: z.loop, area: z.area, dur: dur, dist: 0, mocked: false, at: Date.now() })
+                .then((n) => setPendCount(n)).catch(() => {});
+            });
+        } else {
+          addPending({ id: nid, loop: z.loop, area: z.area, dur: dur, dist: 0, mocked: false, at: Date.now() })
+            .then((n) => setPendCount(n)).catch(() => {});
+        }
+      }, ix * 7000);
+    });
+    skippedRef.current = [];
+    setSkipCount(0);
+    sfx('zona');
+    say(list.length > 1 ? (list.length + ' ta zona olinmoqda...') : 'Zona olinmoqda...', 'ok');
+  };
+
   const dismissZone = () => {
+    const pz = pendingRef.current;
+    if (pz && pz.loop && pz.area >= MIN_AREA_M2) {
+      const dup = skippedRef.current.some((q) => Math.abs(q.area - pz.area) < pz.area * 0.05);
+      if (!dup) {
+        skippedRef.current = [...skippedRef.current, { loop: pz.loop, area: pz.area, at: Date.now() }].slice(-8);
+        setSkipCount(skippedRef.current.length);
+      }
+    }
     dismissedAreaRef.current = pendingRef.current ? pendingRef.current.area : 0;
     pendingRef.current = null;
     setPending(null);
@@ -1883,6 +1927,9 @@ function ZonaApp() {
     lastMoveRef.current = 0;
     setWarn(null);
     setTracking(false);
+    if (skippedRef.current.length > 0) {
+      setTimeout(() => setShowSkipped(true), 400);
+    }
     /* yol ochirilmaydi - keyin davom ettirish mumkin */
     if (pathRef.current.length > 1) {
       saveTrack({ path: pathRef.current, dist: distRef.current,
@@ -3368,6 +3415,60 @@ function ZonaApp() {
             </Text>
           )}
         </View>
+      </Modal>
+
+      <Modal visible={showSkipped} animationType="slide" transparent={true}
+        onRequestClose={() => setShowSkipped(false)}>
+        <Sheet bg={c.sheetBg} border={c.panelBorder} onClose={() => setShowSkipped(false)}>
+          <Text style={[styles.sheetTitle, { color: c.textMain }]}>Yopilmagan zonalar</Text>
+          <Text style={{ color: c.textSub, fontSize: 12.5, marginBottom: 14, lineHeight: 18 }}>
+            Yo{'\u02BB'}l davomida {skippedRef.current.length} ta zona topilgan edi.
+            Ularni hozir olishingiz mumkin.
+          </Text>
+
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
+            {skippedRef.current.map(function (z, ix) {
+              return (
+                <TouchableOpacity key={ix} activeOpacity={0.85}
+                  onPress={() => { tap(); takeSkipped([z]); }}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center',
+                    backgroundColor: c.rowBg, borderRadius: 14,
+                    padding: 14, marginBottom: 8,
+                  }}>
+                  <Text style={{ fontSize: 19, marginRight: 12 }}>{'\uD83D\uDCCD'}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: c.textMain, fontSize: 15, fontWeight: '800' }}>
+                      {(z.area / 10000).toFixed(2)} gektar
+                    </Text>
+                    <Text style={{ color: c.textSub, fontSize: 11, marginTop: 2 }}>
+                      {z.loop.length} nuqta
+                    </Text>
+                  </View>
+                  <Text style={{ color: c.accent, fontSize: 12.5, fontWeight: '700' }}>OLISH</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {skippedRef.current.length > 1 ? (
+            <TouchableOpacity activeOpacity={0.85}
+              onPress={() => { tap(); takeSkipped(skippedRef.current); }}
+              style={{
+                backgroundColor: c.accent, borderRadius: 15,
+                paddingVertical: 16, alignItems: 'center', marginTop: 6,
+              }}>
+              <Text style={{ color: c.accentInk, fontSize: 14.5, fontWeight: '900' }}>
+                HAMMASINI OLISH ({skippedRef.current.length})
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
+          <TouchableOpacity style={[styles.closeBtn, { borderColor: c.panelBorder }]}
+            onPress={() => { skippedRef.current = []; setSkipCount(0); setShowSkipped(false); }}>
+            <Text style={{ color: c.textSub, fontSize: 14 }}>Kerak emas</Text>
+          </TouchableOpacity>
+        </Sheet>
       </Modal>
 
       <Login
