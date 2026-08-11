@@ -71,8 +71,11 @@ export async function savePending(list) {
 export async function addPending(item) {
   const list = await loadPending();
   list.push(item);
-  await savePending(list);
-  return list.length;
+  /* navbat cheksiz osmasin - eng eskisi tushib qoladi */
+  const MAX = 40;
+  const trimmed = list.length > MAX ? list.slice(list.length - MAX) : list;
+  await savePending(trimmed);
+  return trimmed.length;
 }
 
 export async function removePending(id) {

@@ -323,7 +323,7 @@ export function ZonesBatch({ items, onPick, sid, lineW }) {
       properties: {
         zid: z.id,
         col: z.zone_color || z.color || '#888888',
-        fop: z.img ? 0 : 0.22,
+        fop: (z.img && z.img_full) ? 0 : 0.22,
       },
       geometry: { type: 'Polygon', coordinates: rings },
     });

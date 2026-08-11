@@ -422,6 +422,8 @@ function ZonaApp() {
   const [skipCount, setSkipCount] = useState(0);
   const [showSkipped, setShowSkipped] = useState(false);
   const lastZoneAtRef = useRef(0);
+  const refBusyRef = useRef(false);
+  const refAgainRef = useRef(false);
   const zonesRef = useRef([]);
   const toastAnim = useRef(new Animated.Value(0)).current;
   const drawerAnim = useRef(new Animated.Value(-DRAWER_W)).current;
@@ -1244,6 +1246,19 @@ function ZonaApp() {
     });
   };
   const refreshRemote = async () => {
+    if (refBusyRef.current) { refAgainRef.current = true; return; }
+    refBusyRef.current = true;
+    try {
+      await _refreshInner();
+    } catch (e) {}
+    refBusyRef.current = false;
+    if (refAgainRef.current) {
+      refAgainRef.current = false;
+      setTimeout(() => refreshRemote(), 400);
+    }
+  };
+
+  const _refreshInner = async () => {
     try {
       if (mapRef.current && mapRef.current.getBounds && mapRef.current.getCenter) {
         const b = await mapRef.current.getBounds();
@@ -1608,6 +1623,10 @@ function ZonaApp() {
     }
 
     pathRef.current.push(pt);
+    /* juda uzun yol ilovani sekinlashtiradi - oxirgi 6000 nuqta yetarli */
+    if (pathRef.current.length > 6000) {
+      pathRef.current = pathRef.current.slice(-5000);
+    }
  
     if (skipLoop) return true;
     let res = findLoop(pathRef.current);
@@ -2067,7 +2086,7 @@ function ZonaApp() {
     lastCamRef.current = 0;
     if (followTimerRef.current) clearTimeout(followTimerRef.current);
     if (location && camRef.current) {
-      camRef.current.easeTo({ center: [location.longitude, location.latitude], zoom: 16.5, duration: 600 });
+      camRef.current.flyTo({ center: [location.longitude, location.latitude], zoom: 16.5, duration: 1100 });
     }
   };
  
