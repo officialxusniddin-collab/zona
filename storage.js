@@ -3,6 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const ZONES_KEY = 'zona_zones_v1';
 
 export async function saveZones(zones) {
+  /* juda kop zona ilovani sekinlashtiradi - oxirgi 300 tasi yetarli */
+  try {
+    if (Array.isArray(zones) && zones.length > 300) zones = zones.slice(-300);
+  } catch (e) {}
   try {
     await AsyncStorage.setItem(ZONES_KEY, JSON.stringify(zones));
   } catch (e) {
