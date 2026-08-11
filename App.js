@@ -2613,19 +2613,36 @@ function ZonaApp() {
                 borderWidth: 1, borderColor: alpha(myColor, 0.22),
               }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{
-                    width: 54, height: 54, borderRadius: 19, overflow: 'hidden',
-                    backgroundColor: myColor,
-                    alignItems: 'center', justifyContent: 'center',
-                    shadowColor: myColor, shadowOpacity: 0.5,
-                    shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5,
-                  }}>
-                    {myAvatar
-                      ? <Image source={{ uri: myAvatar }} style={{ width: '100%', height: '100%' }} />
-                      : <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>
+                  <TouchableOpacity activeOpacity={0.8}
+                    onPress={() => { tap(); pickAvatar(); }}
+                    style={{
+                      width: 54, height: 54, borderRadius: 19,
+                      backgroundColor: myColor,
+                      alignItems: 'center', justifyContent: 'center',
+                      shadowColor: myColor, shadowOpacity: 0.5,
+                      shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5,
+                    }}>
+                    <View style={{ width: 54, height: 54, borderRadius: 19, overflow: 'hidden',
+                      alignItems: 'center', justifyContent: 'center' }}>
+                      {uploading ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                      ) : myAvatar ? (
+                        <Image source={{ uri: myAvatar }} style={{ width: '100%', height: '100%' }} />
+                      ) : (
+                        <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>
                           {String((meStats && meStats.name) || '?').charAt(0).toUpperCase()}
-                        </Text>}
-                  </View>
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{
+                      position: 'absolute', right: -3, bottom: -3,
+                      width: 21, height: 21, borderRadius: 11,
+                      backgroundColor: c.sheetBg,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Ionicons name="camera" size={12} color={c.textSub} />
+                    </View>
+                  </TouchableOpacity>
 
                   <View style={{ flex: 1, marginLeft: 14 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -3246,39 +3263,6 @@ function ZonaApp() {
                       </View>
                     ) : null}
                   </TouchableOpacity>
-
-                    <Text style={[styles.pfLabel, { color: c.textSub, marginTop: 18 }]}>LOGO</Text>
-                    <Text style={{ color: c.textSub, fontSize: 11, marginBottom: 8 }}>
-                      Kartada dumaloq belgi va reytingda koʻrinadi
-                    </Text>
-
-                    <TouchableOpacity onPress={() => { tap(); pickLogo(); }} activeOpacity={0.85}
-                      style={{
-                        flexDirection: 'row', alignItems: 'center',
-                        backgroundColor: c.rowBg, borderRadius: 15, padding: 13,
-                      }}>
-                      <View style={{
-                        width: 52, height: 52, borderRadius: 26, overflow: 'hidden',
-                        borderWidth: 2, borderColor: c.accent,
-                        backgroundColor: alpha(c.accent, 0.12),
-                        alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {meStats && meStats.logo ? (
-                          <Image source={{ uri: meStats.logo }} style={{ width: '100%', height: '100%' }} />
-                        ) : (
-                          <Ionicons name="image" size={20} color={c.accent} />
-                        )}
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 13 }}>
-                        <Text style={{ color: c.textMain, fontSize: 14, fontWeight: '700' }}>
-                          {meStats && meStats.logo ? 'Logoni almashtirish' : 'Logo qoʻyish'}
-                        </Text>
-                        <Text style={{ color: c.textSub, fontSize: 11, marginTop: 3 }}>
-                          {meStats && meStats.logo && !meStats.logo_ok ? 'Tekshiruvda' : 'Kvadrat rasm yaxshi'}
-                        </Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={17} color={c.textSub} style={{ opacity: 0.5 }} />
-                    </TouchableOpacity>
 
                   <Text style={[styles.fLabel, { color: c.textSub }]}>ZONA RANGI</Text>
                   <View style={[styles.colorBox, { backgroundColor: c.rowBg, borderColor: c.panelBorder }]}>
