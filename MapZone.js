@@ -157,7 +157,7 @@ export function ZoneLogos({ items }) {
       dLat = Math.max(dLat, Math.abs(p.latitude - cx));
       dLon = Math.max(dLon, Math.abs(p.longitude - cy));
     }
-    best = { latitude: cx + dLat * 0.14, longitude: cy + dLon * 0.12 };
+    best = { latitude: cx, longitude: cy };
     const key = 'lg_' + it.id;
     imgs[key] = it.url;
     feats.push({

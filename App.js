@@ -2616,13 +2616,13 @@ function ZonaApp() {
                   <TouchableOpacity activeOpacity={0.8}
                     onPress={() => { tap(); pickAvatar(); }}
                     style={{
-                      width: 54, height: 54, borderRadius: 19,
+                      width: 54, height: 54, borderRadius: 27,
                       backgroundColor: myColor,
                       alignItems: 'center', justifyContent: 'center',
                       shadowColor: myColor, shadowOpacity: 0.5,
                       shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5,
                     }}>
-                    <View style={{ width: 54, height: 54, borderRadius: 19, overflow: 'hidden',
+                    <View style={{ width: 54, height: 54, borderRadius: 27, overflow: 'hidden',
                       alignItems: 'center', justifyContent: 'center' }}>
                       {uploading ? (
                         <ActivityIndicator color="#FFFFFF" />
