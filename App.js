@@ -3247,6 +3247,39 @@ function ZonaApp() {
                     ) : null}
                   </TouchableOpacity>
 
+                    <Text style={[styles.pfLabel, { color: c.textSub, marginTop: 18 }]}>LOGO</Text>
+                    <Text style={{ color: c.textSub, fontSize: 11, marginBottom: 8 }}>
+                      Kartada dumaloq belgi va reytingda koʻrinadi
+                    </Text>
+
+                    <TouchableOpacity onPress={() => { tap(); pickLogo(); }} activeOpacity={0.85}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center',
+                        backgroundColor: c.rowBg, borderRadius: 15, padding: 13,
+                      }}>
+                      <View style={{
+                        width: 52, height: 52, borderRadius: 26, overflow: 'hidden',
+                        borderWidth: 2, borderColor: c.accent,
+                        backgroundColor: alpha(c.accent, 0.12),
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {meStats && meStats.logo ? (
+                          <Image source={{ uri: meStats.logo }} style={{ width: '100%', height: '100%' }} />
+                        ) : (
+                          <Ionicons name="image" size={20} color={c.accent} />
+                        )}
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 13 }}>
+                        <Text style={{ color: c.textMain, fontSize: 14, fontWeight: '700' }}>
+                          {meStats && meStats.logo ? 'Logoni almashtirish' : 'Logo qoʻyish'}
+                        </Text>
+                        <Text style={{ color: c.textSub, fontSize: 11, marginTop: 3 }}>
+                          {meStats && meStats.logo && !meStats.logo_ok ? 'Tekshiruvda' : 'Kvadrat rasm yaxshi'}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={17} color={c.textSub} style={{ opacity: 0.5 }} />
+                    </TouchableOpacity>
+
                   <Text style={[styles.fLabel, { color: c.textSub }]}>ZONA RANGI</Text>
                   <View style={[styles.colorBox, { backgroundColor: c.rowBg, borderColor: c.panelBorder }]}>
                     <View style={styles.colorRow}>
