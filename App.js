@@ -1508,6 +1508,12 @@ function ZonaApp() {
     setUploading(false);
   };
 
+  useEffect(() => {
+    if (!trialWin) {
+      try { twGlow.stopAnimation(); twGlow.setValue(0); } catch (e) {}
+    }
+  }, [trialWin]);
+
   const openPremium = async () => {
     if (!meStats) {
       const u = userRef.current;
