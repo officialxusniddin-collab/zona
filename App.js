@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { AppState, StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Alert, Animated, Modal, ScrollView, TextInput, Image, Linking, Dimensions, RefreshControl, BackHandler, PanResponder, KeyboardAvoidingView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { Easing } from 'react-native';
 import MapView, { Polyline, Marker, Polygon, Overlay } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -34,7 +35,7 @@ const MAP_STYLE = 'https://api.maptiler.com/maps/streets-v4/style.json?key=' + M
 const MAP_STYLE_DARK = 'https://api.maptiler.com/maps/streets-v4-dark/style.json?key=' + MAPTILER_KEY;
 
 const SCREEN_H = Dimensions.get('window').height;
-const DRAWER_W = Math.min(SCREEN_W * 0.78, 320);
+const DRAWER_W = Math.min(SCREEN_W * 0.86, 360);
  
 const DARK_MAP = [
   { elementType: 'geometry', stylers: [{ color: '#0F1620' }] },
@@ -184,6 +185,73 @@ function ptInPoly(lat, lon, poly) {
 function bdVisible(b, p, view) {
   const y = (p._top || 0) + (b._y || 0);
   return y > view.y - 160 && y < view.y + view.h + 160;
+}
+
+function MenuRow({ item, idx, c, tap }) {
+  const sc = useRef(new Animated.Value(1)).current;
+  const ap = useRef(new Animated.Value(0)).current;
+  const tx = useRef(new Animated.Value(-18)).current;
+
+  useEffect(() => {
+    const d = Math.min(idx * 32, 420);
+    Animated.parallel([
+      Animated.timing(ap, { toValue: 1, duration: 260, delay: d, useNativeDriver: true }),
+      Animated.spring(tx, { toValue: 0, delay: d, friction: 9, tension: 60, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const lite = (hex, k) => {
+    try {
+      const h = String(hex).replace('#', '');
+      const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+      const f = (v) => Math.round(v + (255 - v) * k);
+      return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
+    } catch (e) { return hex; }
+  };
+
+  return (
+    <Animated.View style={{ opacity: ap, transform: [{ translateX: tx }, { scale: sc }] }}>
+      <TouchableOpacity activeOpacity={0.9}
+        onPressIn={() => Animated.spring(sc, { toValue: 0.97, useNativeDriver: true, speed: 45 }).start()}
+        onPressOut={() => Animated.spring(sc, { toValue: 1, useNativeDriver: true, speed: 45 }).start()}
+        onPress={() => { tap(); item[3](); }}
+        style={{
+          flexDirection: 'row', alignItems: 'center',
+          paddingVertical: 13, paddingHorizontal: 13,
+          backgroundColor: c.rowBg,
+          borderRadius: 17,
+          marginBottom: 8,
+        }}>
+        <View
+          style={{
+            width: 40, height: 40, borderRadius: 14,
+            alignItems: 'center', justifyContent: 'center',
+            backgroundColor: item[2],
+            borderWidth: 1, borderColor: lite(item[2], 0.35),
+            shadowColor: item[2], shadowOpacity: 0.5,
+            shadowRadius: 9, shadowOffset: { width: 0, height: 4 },
+            elevation: 5,
+          }}>
+          <Ionicons name={item[0]} size={20} color="#FFFFFF" />
+        </View>
+
+        <Text style={{ color: c.textMain, fontSize: 15.5, fontWeight: '600', marginLeft: 14, flex: 1 }}>
+          {item[1]}
+        </Text>
+
+        {item[4] ? (
+          <View style={{
+            paddingHorizontal: 9, paddingVertical: 4, borderRadius: 9,
+            backgroundColor: 'rgba(255,255,255,0.06)', marginRight: 7,
+          }}>
+            <Text style={{ color: c.textSub, fontSize: 12, fontWeight: '600' }}>{item[4]}</Text>
+          </View>
+        ) : null}
+
+        <Ionicons name="chevron-forward" size={17} color={c.textSub} style={{ opacity: 0.5 }} />
+      </TouchableOpacity>
+    </Animated.View>
+  );
 }
 
 function ZonaApp() {
@@ -356,7 +424,7 @@ function ZonaApp() {
   const lastZoneAtRef = useRef(0);
   const zonesRef = useRef([]);
   const toastAnim = useRef(new Animated.Value(0)).current;
-  const drawerAnim = useRef(new Animated.Value(900)).current;
+  const drawerAnim = useRef(new Animated.Value(-DRAWER_W)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
  
   const c = isDark ? T.dark : T.light;
@@ -926,6 +994,12 @@ function ZonaApp() {
     return def;
   };
 
+  const loadTasks = () => {
+    const u = userRef.current;
+    if (!u) return;
+    fetchTasks(u.user_id).then((d) => { if (d) setTasks(d); }).catch(() => {});
+  };
+
   const loadPlan = () => {
     const u = userRef.current;
     if (!u) return;
@@ -1033,6 +1107,8 @@ function ZonaApp() {
       if (mustAuth) return true;
       if (showLogin) { setShowLogin(false); return true; }
       if (showAcc) { setShowAcc(false); return true; }
+      if (showIntro) { setShowIntro(false); return true; }
+      if (showSkipped) { setShowSkipped(false); return true; }
       if (infoPage) { setInfoPage(null); return true; }
       if (showDelZones) { setShowDelZones(false); return true; }
       if (showSfx) { setShowSfx(false); return true; }
@@ -1055,7 +1131,7 @@ function ZonaApp() {
     };
     const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
     return () => sub.remove();
-  }, [menuOpen, showBoard, showPrem, showPlans, showPhotos, showTasks, showBorders, showLogin, showAcc, needNick, askAuth, mustAuth, infoPage, showDelZones, showSfx, showSearch, showAdmin, updInfo, bigPhoto, infoZone, trialWin]);
+  }, [menuOpen, showBoard, showPrem, showPlans, showPhotos, showTasks, showBorders, showLogin, showAcc, showIntro, showSkipped, needNick, askAuth, mustAuth, infoPage, showDelZones, showSfx, showSearch, showAdmin, updInfo, bigPhoto, infoZone, trialWin]);
 
   const doLogout = () => {
     Alert.alert(
@@ -1083,6 +1159,15 @@ function ZonaApp() {
 
   const bdCount = bdData ? (bdData.borders || []).filter(function (b) { return b.owned; }).length : 0;
   const bdTotal = bdData ? (bdData.borders || []).length : 0;
+
+  const lighten = (hex, k) => {
+    try {
+      const h = hex.replace('#', '');
+      const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+      const f = (v) => Math.round(v + (255 - v) * k);
+      return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
+    } catch (e) { return hex; }
+  };
 
   const renderCell = (x, ix) => {
     const sc = new Animated.Value(1);
@@ -1151,7 +1236,7 @@ function ZonaApp() {
  
   const closeMenu = (after) => {
     Animated.parallel([
-      Animated.timing(drawerAnim, { toValue: 900, duration: 240, useNativeDriver: true }),
+      Animated.timing(drawerAnim, { toValue: -DRAWER_W, duration: 230, useNativeDriver: true }),
       Animated.timing(fadeAnim, { toValue: 0, duration: 240, useNativeDriver: true }),
     ]).start(() => {
       setMenuOpen(false);
@@ -1409,7 +1494,16 @@ function ZonaApp() {
   };
 
   const openPremium = async () => {
-    if (!meStats) return;
+    if (!meStats) {
+      const u = userRef.current;
+      if (!u) { say('Avval hisobga kiring', 'warn'); return; }
+      try {
+        const m = await fetchMe(u.user_id);
+        setMeStats(m);
+        setTimeout(() => openPremium(), 250);
+      } catch (e) { say('Internet yoʻq - qayta urining', 'warn'); }
+      return;
+    }
     loadMyPhotos();
     loadPlan();
     setPfDirty(false);
@@ -2499,76 +2593,99 @@ function ZonaApp() {
 
           <Animated.View
             style={{
-              position: 'absolute', left: 0, right: 0, bottom: 0,
-              height: SCREEN_H * 0.97,
+              position: 'absolute', left: 0, top: 0, bottom: 0,
+              width: DRAWER_W,
               backgroundColor: c.sheetBg,
-              borderTopLeftRadius: 28, borderTopRightRadius: 28,
-              transform: [{ translateY: Animated.add(drawerAnim, menuH.interpolate({ inputRange: [0, 1], outputRange: [SCREEN_H * 0.17, 0] })) }],
+              borderTopRightRadius: 26, borderBottomRightRadius: 26,
+              transform: [{ translateX: drawerAnim }],
             }}
           >
-            <View {...menuPan.panHandlers}>
-              <View style={{ alignItems: 'center', paddingTop: 13, paddingBottom: 9 }}>
-                <View style={{ width: 42, height: 4.5, borderRadius: 3, backgroundColor: c.panelBorder }} />
-              </View>
+            <View>
+              <View style={{ height: 46 }} />
 
-            <TouchableOpacity activeOpacity={0.85}
+            <TouchableOpacity activeOpacity={0.88}
               onPress={() => { tap(); if (savedAcc || (meStats && meStats.verified)) closeMenu(() => setShowAcc(true)); else closeMenu(() => setShowLogin(true)); }}
-              style={{
-                marginHorizontal: 16, marginBottom: 4,
+              style={{ marginHorizontal: 16, marginBottom: 14 }}>
+
+              <View style={{
                 borderRadius: 20, padding: 16,
-                backgroundColor: alpha(myColor, isDark ? 0.13 : 0.09),
+                backgroundColor: alpha(myColor, isDark ? 0.15 : 0.10),
+                borderWidth: 1, borderColor: alpha(myColor, 0.22),
               }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={{
-                  width: 56, height: 56, borderRadius: 28, overflow: 'hidden',
-                  borderWidth: 2.5, borderColor: myColor,
-                  backgroundColor: alpha(myColor, 0.18),
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {myAvatar
-                    ? <Image source={{ uri: myAvatar }} style={{ width: '100%', height: '100%' }} />
-                    : <Text style={{ color: myColor, fontSize: 22, fontWeight: '900' }}>
-                        {String((meStats && meStats.name) || '?').charAt(0).toUpperCase()}
-                      </Text>}
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{
+                    width: 54, height: 54, borderRadius: 19, overflow: 'hidden',
+                    backgroundColor: myColor,
+                    alignItems: 'center', justifyContent: 'center',
+                    shadowColor: myColor, shadowOpacity: 0.5,
+                    shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5,
+                  }}>
+                    {myAvatar
+                      ? <Image source={{ uri: myAvatar }} style={{ width: '100%', height: '100%' }} />
+                      : <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '900' }}>
+                          {String((meStats && meStats.name) || '?').charAt(0).toUpperCase()}
+                        </Text>}
+                  </View>
+
+                  <View style={{ flex: 1, marginLeft: 14 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={{ color: c.textMain, fontSize: 17, fontWeight: '800' }} numberOfLines={1}>
+                        {(meStats && meStats.name) || 'Oʻyinchi'}
+                      </Text>
+                      {(savedAcc || (meStats && meStats.verified)) ? (
+                        <Ionicons name="checkmark-circle" size={15} color={c.accent} style={{ marginLeft: 6 }} />
+                      ) : null}
+                    </View>
+                    <Text style={{ color: c.textSub, fontSize: 11.5, marginTop: 3 }} numberOfLines={1}>
+                      {(savedAcc || (meStats && meStats.contact)) || 'Hisob saqlanmagan'}
+                    </Text>
+                  </View>
+
+                  <Ionicons name="chevron-forward" size={18} color={c.textSub} style={{ opacity: 0.5 }} />
                 </View>
 
-                <View style={{ flex: 1, marginLeft: 14 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={{ color: c.textMain, fontSize: 17.5, fontWeight: '900' }} numberOfLines={1}>
-                      {(meStats && meStats.name) || 'Oʻyinchi'}
-                    </Text>
-                    {(savedAcc || (meStats && meStats.verified)) ? (
-                      <Text style={{ fontSize: 11, marginLeft: 6 }}>{'\u2705'}</Text>
+                <View style={{ flexDirection: 'row', marginTop: 14 }}>
+                  {[
+                    [meStats ? String(meStats.hectares) : '0', 'GEKTAR'],
+                    [meStats ? String(meStats.zones) : '0', 'ZONA'],
+                    [meStats ? ('#' + meStats.rank) : '-', 'OʻRIN'],
+                  ].map(function (q, qi) {
+                    return (
+                      <View key={qi} style={{ flex: 1, alignItems: 'center' }}>
+                        <Text style={{ color: c.textMain, fontSize: 15, fontWeight: '800' }} numberOfLines={1}>{q[0]}</Text>
+                        <Text style={{ color: c.textSub, fontSize: 8.5, letterSpacing: 0.7, marginTop: 2 }}>{q[1]}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {plan && plan.plan !== 'free' ? (
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                    marginTop: 13, paddingTop: 12,
+                    borderTopWidth: 1, borderTopColor: alpha(myColor, 0.16),
+                  }}>
+                    <Ionicons name="star" size={12} color="#F5A623" />
+                    <Text style={{ color: '#F5A623', fontSize: 12, fontWeight: '800', marginLeft: 6 }}>{plan.name}</Text>
+                    {plan.days_left > 0 ? (
+                      <Text style={{ color: c.textSub, fontSize: 11, marginLeft: 8 }}>{plan.days_left + ' kun'}</Text>
                     ) : null}
                   </View>
-                  <Text style={{ color: c.textSub, fontSize: 11.5, marginTop: 4 }} numberOfLines={1}>
-                    {(savedAcc || (meStats && meStats.contact)) || 'Hisob saqlanmagan'}
-                  </Text>
-                </View>
+                ) : null}
 
-                <View style={{
-                  width: 30, height: 30, borderRadius: 15,
-                  alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: alpha(myColor, 0.16),
-                }}>
-                  <Text style={{ color: myColor, fontSize: 16 }}>{'\u203A'}</Text>
-                </View>
-              </View>
-
-              {plan && plan.plan !== 'free' ? (
-                <View style={{
-                  flexDirection: 'row', alignItems: 'center', marginTop: 13,
-                  paddingTop: 12, borderTopWidth: 1, borderTopColor: alpha(myColor, 0.15),
-                }}>
-                  <Text style={{ fontSize: 12, marginRight: 7 }}>{'\u2B50'}</Text>
-                  <Text style={{ color: '#F5A623', fontSize: 12, fontWeight: '800' }}>{plan.name}</Text>
-                  {plan.days_left > 0 ? (
-                    <Text style={{ color: c.textSub, fontSize: 11, marginLeft: 8 }}>
-                      {plan.days_left + ' kun qoldi'}
+                {!(savedAcc || (meStats && meStats.verified)) ? (
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                    marginTop: 13, paddingVertical: 11, borderRadius: 13,
+                    backgroundColor: c.accent,
+                  }}>
+                    <Ionicons name="log-in" size={15} color={c.accentInk} />
+                    <Text style={{ color: c.accentInk, fontSize: 13.5, fontWeight: '800', marginLeft: 7 }}>
+                      HISOBGA KIRISH
                     </Text>
-                  ) : null}
-                </View>
-              ) : null}
+                  </View>
+                ) : null}
+              </View>
             </TouchableOpacity>
 
             <View style={{ flexDirection: 'row', paddingHorizontal: 20, paddingBottom: 14 }}>
@@ -2595,35 +2712,27 @@ function ZonaApp() {
             <ScrollView showsVerticalScrollIndicator={false} style={{ paddingHorizontal: 16 }}
               contentContainerStyle={{ paddingBottom: 80 }}>
 
-              <Text style={styles.mSec}>OʻYIN</Text>
-              <View style={styles.mGrid}>
-                {[
-                  ['\uD83C\uDFC6', 'Reyting', '#00E5A0', () => closeMenu(openBoard), meStats ? ('#' + meStats.rank) : null],
-                  FL('borders') ? ['\u2728', 'Naqshlar', '#00E5A0', () => { loadBorders(); closeMenu(() => setShowBorders(true)); }, bdTotal ? (bdCount + ' / ' + bdTotal) : null] : null,
-                  ['\uD83D\uDCC7', 'Kartochkam', '#00E5A0', () => { const z0 = zones[0]; if (!z0) { say('Avval zona oling', 'warn'); return; } closeMenu(() => setInfoZone(Object.assign({}, meStats || {}, { area: z0.area, coords: z0.coords }))); }, null],
-                  ['\uD83D\uDCE4', 'Ulashish', '#00E5A0', () => closeMenu(shareZone), null],
-                ].filter(Boolean).map(function (x, ix) { return renderCell(x, ix); })}
-              </View>
-
-              <Text style={styles.mSec}>BIZNES</Text>
-              <View style={styles.mGrid}>
-                {[
-                  ['\u2B50', 'Tarif', '#F5A623', () => { loadPlan(); closeMenu(() => setShowPlans(true)); }, plan && plan.plan !== 'free' ? plan.name : null],
-                  ['\u2699\uFE0F', 'Sozlamalar', '#F5A623', () => closeMenu(openPremium), null],
-                  ['\uD83D\uDCF8', 'Rasmlar', '#F5A623', () => { loadMyPhotos(); closeMenu(() => setShowPhotos(true)); }, myPhotos.left_today > 0 ? (myPhotos.left_today + ' ta') : 'limit'],
-                  FL('invite') ? ['\uD83D\uDC65', 'Taklif', '#F5A623', () => closeMenu(inviteFriend), null] : null,
-                ].filter(Boolean).map(function (x, ix) { return renderCell(x, ix); })}
-              </View>
-
-              <Text style={styles.mSec}>SOZLAMA</Text>
-              <View style={styles.mGrid}>
-                {[
-                  [isDark ? '\u2600\uFE0F' : '\uD83C\uDF19', isDark ? 'Kunduzgi' : 'Tungi', '#4CC9F0', () => { setIsDark(!isDark); }, null],
-                  [soundOn ? '\uD83D\uDD0A' : '\uD83D\uDD07', soundOn ? 'Ovoz yoniq' : 'Ovoz oʻchiq', '#4CC9F0', () => { const n = !soundOn; setSoundOnState(n); setSoundOn(n); }, null],
-                  ['\uD83C\uDFAC', 'Qoʻllanma', '#4CC9F0', () => closeMenu(() => setShowIntro(true)), null],
-                  ['\uD83D\uDCD6', 'Qanday oʻynash', '#4CC9F0', () => closeMenu(() => setInfoPage('how')), null],
-                ].filter(Boolean).map(function (x, ix) { return renderCell(x, ix); })}
-              </View>
+              {[
+                ['trophy', 'Reyting', '#FFB800', () => closeMenu(openBoard), meStats ? ('#' + meStats.rank) : ''],
+                FL('borders') ? ['sparkles', 'Chegara naqshi', '#C77DFF', () => { loadBorders(); closeMenu(() => setShowBorders(true)); }, bdTotal ? (bdCount + '/' + bdTotal) : ''] : null,
+                ['ribbon', 'Vazifa va yutuqlar', '#00E5A0', () => { loadTasks(); closeMenu(() => setShowTasks(true)); }, tasks ? (tasks.ach_done + '/' + tasks.ach_total) : ''],
+                ['id-card', 'Kartochkam', '#4CC9F0', () => { const z0 = zones[0]; if (!z0) { say('Avval zona oling', 'warn'); return; } closeMenu(() => setInfoZone(Object.assign({}, meStats || {}, { area: z0.area, coords: z0.coords }))); }, ''],
+                null,
+                ['star', 'Tarif', '#F5A623', () => { loadPlan(); closeMenu(() => setShowPlans(true)); }, plan ? plan.name : ''],
+                ['business', 'Biznes sozlamalar', '#8A9BAE', () => closeMenu(openPremium), ''],
+                ['camera', 'Kunlik rasmlar', '#FF6B9D', () => { loadMyPhotos(); closeMenu(() => setShowPhotos(true)); }, (myPhotos && myPhotos.limit) ? (myPhotos.left_today + '/' + myPhotos.limit) : ''],
+                null,
+                FL('invite') ? ['person-add', 'Do\u02BBstni taklif qilish', '#00D9A5', () => closeMenu(inviteFriend), ''] : null,
+                ['share-social', 'Natijamni ulashish', '#00E5A0', () => closeMenu(shareZone), ''],
+                null,
+                [isDark ? 'sunny' : 'moon', isDark ? 'Kunduzgi rejim' : 'Tungi rejim', '#7B9EFF', () => setIsDark(!isDark), ''],
+                [soundOn ? 'volume-high' : 'volume-mute', 'Ovoz', '#5FD3C4', () => { const nn = !soundOn; setSoundOnState(nn); setSoundOn(nn); }, soundOn ? 'yoniq' : 'o\u02BBchiq'],
+                ['play-circle', 'Qo\u02BBllanma', '#FFA463', () => closeMenu(() => setShowIntro(true)), ''],
+                ['book', 'Qanday o\u02BBynash', '#9C8AFF', () => closeMenu(() => setInfoPage('how')), ''],
+              ].map(function (x, ix) {
+                if (!x) return <View key={'sp' + ix} style={{ height: 10 }} />;
+                return <MenuRow key={ix} item={x} idx={ix} c={c} tap={tap} />;
+              })}
 
               <View style={{ height: 14 }} />
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -2714,7 +2823,10 @@ function ZonaApp() {
                       </View>
                     ) : (
                       <TouchableOpacity onPress={() => setEditName(true)} activeOpacity={0.7}>
-                        <Text style={[styles.meName, { color: c.textMain }]}>{meStats.name}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Text style={[styles.meName, { color: c.textMain }]}>{meStats.name}</Text>
+                      <Text style={{ fontSize: 12, marginLeft: 7, opacity: 0.55 }}>{'\u270F\uFE0F'}</Text>
+                    </View>
                       </TouchableOpacity>
                     )}
                     {meStats.avatar && !meStats.avatar_ok && (
