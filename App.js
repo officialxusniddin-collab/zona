@@ -2313,16 +2313,9 @@ function ZonaApp() {
         />
 
 
-        {visibleRemote.slice().sort((a, b) => (b.area || 0) - (a.area || 0)).slice(0, 25).map((z) => (
-          z.img ? <ZoneImage key={'ri' + z.id} id={z.id} url={z.img} bounds={z.img_bounds} /> : null
-        ))}
-
-        {myZoneImgs.slice(0, 15).map((z) => (
-          <ZoneImage key={'mi' + z.id} id={'my' + z.id} url={z.img} bounds={z.img_bounds} />
-        ))}
 
         <ZonesBatch
-          items={visibleRemote}
+          items={visibleRemote.map((z) => Object.assign({}, z, { img_full: !!z.img_full }))}
           onPick={(zid) => {
             const z = visibleRemote.find((q) => q.id === zid);
             if (!z) return;
@@ -2339,6 +2332,7 @@ function ZonaApp() {
           items={zones.map((z) => ({
             id: z.id, coords: z.coords, color: myColor,
             img: myZoneImgs.some((q) => q.id === z.id) ? 1 : null,
+            img_full: myZoneImgs.some((q) => q.id === z.id && q.img_full),
           }))}
           onPick={(zid) => {
             const z = zones.find((q) => q.id === zid);
@@ -2347,6 +2341,14 @@ function ZonaApp() {
             setInfoZone(Object.assign({}, meStats || {}, { area: z.area, coords: z.coords, views: myViews ? myViews.all.unique : 0 }));
           }}
         />
+
+        {visibleRemote.slice().sort((a, b) => (b.area || 0) - (a.area || 0)).slice(0, 25).map((z) => (
+          z.img ? <ZoneImage key={'ri' + z.id} id={z.id} url={z.img} bounds={z.img_bounds} /> : null
+        ))}
+
+        {myZoneImgs.slice(0, 15).map((z) => (
+          <ZoneImage key={'mi' + z.id} id={'my' + z.id} url={z.img} bounds={z.img_bounds} />
+        ))}
 
 
 
@@ -2363,12 +2365,13 @@ function ZonaApp() {
           <ZoneBorder key={'rb' + z.id} id={'r' + z.id} coords={z.coords} color={z.zone_color || z.color || '#888888'} area={z.area} active={true} zoom={zoomDelta} code={z.border_style} />
         ))}
 
+
+        <MeDot lat={location ? location.latitude : null} lon={location ? location.longitude : null} color={myColor} />
+
         <ZoneLogos items={[
           ...visibleRemote.filter((z) => z.logo || z.avatar).map((z) => ({ id: z.id, coords: z.coords, url: z.logo || z.avatar, area: z.area })),
           ...((meStats && (meStats.logo || meStats.avatar)) ? zones.map((z) => ({ id: 'my' + z.id, coords: z.coords, url: meStats.logo || meStats.avatar, area: z.area })) : []),
         ]} />
-
-        <MeDot lat={location ? location.latitude : null} lon={location ? location.longitude : null} color={myColor} />
 
 
       </MapLibreGL.Map>
