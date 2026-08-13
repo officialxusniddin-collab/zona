@@ -1877,9 +1877,9 @@ function ZonaApp() {
           }
         }
         const sp = speedRef.current || 0;
-        const zm = sp > 11 ? 15.5 : sp > 4 ? 16.8 : 17.6;
+        const zm = sp > 11 ? 14.6 : sp > 4 ? 15.0 : 15.4;
         setCamHead(hd);
-        if (camRef.current) camRef.current.easeTo({ center: [lastPt.longitude, lastPt.latitude], bearing: hd, zoom: zm, pitch: is3D ? 60 : 0, duration: 900 });
+        if (camRef.current) camRef.current.easeTo({ center: [lastPt.longitude, lastPt.latitude], bearing: hd, zoom: zm, pitch: trackingRef.current ? 50 : (is3D ? 60 : 0), duration: 900 });
       }
     }
   };
@@ -2077,6 +2077,29 @@ function ZonaApp() {
     mockedRef.current = false;
     trackingRef.current = true;
     setTracking(true);
+    /* kamera menga kelsin */
+    followRef.current = true;
+    setFollow(true);
+    setTimeout(async () => {
+      try {
+        const _p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        if (camRef.current && _p && _p.coords) {
+          camRef.current.setCamera({
+            centerCoordinate: [_p.coords.longitude, _p.coords.latitude],
+            zoomLevel: 15.0,
+            pitch: 50,
+            animationDuration: 800,
+          });
+        }
+      } catch (e) {}
+    }, 350);
+    /* 3D holatga otish */
+    setTimeout(() => {
+      try {
+        if (camRef.current) camRef.current.easeTo({ pitch: 50, duration: 800 });
+        setIs3D(true);
+      } catch (e) {}
+    }, 1300);
   };
  
   const stopTracking = async () => {
@@ -2343,11 +2366,11 @@ function ZonaApp() {
       >
         <MapLibreGL.Camera
           ref={camRef}
-          followUserLocation={follow && !tracking}
+          followUserLocation={follow}
           followUserMode={tracking ? 'course' : 'normal'}
-          followZoomLevel={tracking ? 17.2 : 16.5}
-          followPitch={tracking || is3D ? 55 : 0}
-          padding={tracking ? { paddingTop: 0, paddingBottom: SCREEN_H * 0.30, paddingLeft: 0, paddingRight: 0 } : undefined}
+          followZoomLevel={tracking ? 15.0 : 16.5}
+          followPitch={tracking ? 50 : (is3D ? 55 : 0)}
+          padding={tracking ? { paddingTop: 0, paddingBottom: SCREEN_H * 0.42, paddingLeft: 0, paddingRight: 0 } : undefined}
           defaultSettings={{
             centerCoordinate: [location.longitude, location.latitude],
             zoomLevel: 16.5,

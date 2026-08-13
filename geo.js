@@ -46,7 +46,7 @@ let MIN_AWAY = 30;
 let CLOSE_DIST = 18;
 let MIN_AREA = 500;
 let MIN_PERIM = 85;
-let SHAPE_RATIO = 0.06;
+let SHAPE_RATIO = 0.16;
 
 export function setGeoConfig(g) {
   if (!g) return;
