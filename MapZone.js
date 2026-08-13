@@ -179,10 +179,11 @@ export function ZoneLogos({ items }) {
           type="symbol"
           layout={{
             'icon-image': ['get', 'icon'],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 8, 0.09, 12, 0.14, 15, 0.20, 18, 0.28],
+            'icon-size': 0.10,
             'icon-offset': [0, -14],
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
+            /* uzoqlashganda faqat kattalari korinadi */
+            'icon-allow-overlap': false,
+            'icon-ignore-placement': false,
             'symbol-sort-key': ['-', 0, ['get', 'ar']],
           }}
         />

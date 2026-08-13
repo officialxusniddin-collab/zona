@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { AppState, StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Alert, Animated, Modal, ScrollView, TextInput, Image, Linking, Dimensions, RefreshControl, BackHandler, PanResponder, KeyboardAvoidingView, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
 import { Easing } from 'react-native';
 import MapView, { Polyline, Marker, Polygon, Overlay } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -232,7 +231,7 @@ function MenuRow({ item, idx, c, tap }) {
             shadowRadius: 9, shadowOffset: { width: 0, height: 4 },
             elevation: 5,
           }}>
-          <Ionicons name={item[0]} size={20} color="#FFFFFF" />
+          <Text style={{ fontSize: 20 }}>{item[0]}</Text>
         </View>
 
         <Text style={{ color: c.textMain, fontSize: 15.5, fontWeight: '600', marginLeft: 14, flex: 1 }}>
@@ -248,7 +247,7 @@ function MenuRow({ item, idx, c, tap }) {
           </View>
         ) : null}
 
-        <Ionicons name="chevron-forward" size={17} color={c.textSub} style={{ opacity: 0.5 }} />
+                      <Text style={{ fontSize: 17, color: c.textSub, opacity: 0.5 }}>{'\u203A'}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -590,8 +589,12 @@ function ZonaApp() {
           const age = Date.now() - (t.at || 0);
           if (age < 30 * 60 * 1000) {
             Location.hasServicesEnabledAsync().then((on) => {
-              if (on) resumeNow();
-              else { clearTrack(); setWarn('Joylashuv oʻchirilgan - START bosib qayta boshlang'); }
+              if (!on) { clearTrack(); setWarn('Joylashuv o\u02BBchirilgan - START bosib qayta boshlang'); return; }
+              Alert.alert('Yo\u02BBlingiz davom etmoqda', km + ' km yurgansiz. Davom etasizmi?', [
+                { text: 'Yo\u02BBq', style: 'cancel', onPress: () => clearTrack() },
+                { text: 'Davom', onPress: resumeNow },
+              ]);
+
             }).catch(() => { resumeNow(); });
             setTimeout(() => say(TX('resumed', 'Yoʻlingiz davom etmoqda'), 'ok'), 900);
           } else {
@@ -1594,6 +1597,9 @@ function ZonaApp() {
  
     const pt = { latitude: lat, longitude: lon };
     const prev = lastPointRef.current;
+    /* eski nuqta chiziqni orqaga tortadi - rad etamiz */
+    const _ts = timestamp || Date.now();
+    if (prev && prev.t && _ts < prev.t - 1500) return false;
  
     if (!prev) {
       lastPointRef.current = { ...pt, t: timestamp };
@@ -1745,6 +1751,8 @@ function ZonaApp() {
     }
 
     lastZoneAtRef.current = Date.now();
+    /* zona olingach yozuv toxtaydi - oyinchi START bosib davom etadi */
+    setTimeout(() => { try { if (trackingRef.current) stopTracking(); } catch (e) {} }, 1200);
     const lastPt = pathRef.current[pathRef.current.length - 1];
     const cutAt = (p.cutIndex != null && p.cutIndex >= 0) ? p.cutIndex : 0;
     const tail = pathRef.current.slice(cutAt);
@@ -1915,7 +1923,9 @@ function ZonaApp() {
       }
       if (fresh.length === 0) {
         try {
-          const disk = await loadBgBuffer();
+          let disk = await loadBgBuffer();
+          /* vaqt boyicha saralaymiz - chiziq orqaga tortilmasin */
+          try { if (disk && disk.length > 1) disk = disk.slice().sort((a, b) => (a.t || 0) - (b.t || 0)); } catch (e) {}
           if (disk.length > 0) {
             const lastT = lastPointRef.current ? (lastPointRef.current.t || 0) : 0;
             fresh = lastT > 0 ? disk.filter((p) => p.timestamp > lastT + 500) : disk;
@@ -2343,10 +2353,10 @@ function ZonaApp() {
         />
 
         {visibleRemote.slice().sort((a, b) => (b.area || 0) - (a.area || 0)).slice(0, 25).map((z) => (
-          z.img ? <ZoneImage key={'ri' + z.id} id={z.id} url={z.img} bounds={z.img_bounds} /> : null
+          (z.img && z.img_full) ? <ZoneImage key={'ri' + z.id} id={z.id} url={z.img} bounds={z.img_bounds} /> : null
         ))}
 
-        {myZoneImgs.slice(0, 15).map((z) => (
+        {myZoneImgs.filter((z) => z.img_full).slice(0, 15).map((z) => (
           <ZoneImage key={'mi' + z.id} id={'my' + z.id} url={z.img} bounds={z.img_bounds} />
         ))}
 
@@ -2668,7 +2678,7 @@ function ZonaApp() {
                       backgroundColor: c.sheetBg,
                       alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <Ionicons name="camera" size={12} color={c.textSub} />
+                      <Text style={{ fontSize: 12 }}>{'\uD83D\uDCF8'}</Text>
                     </View>
                   </TouchableOpacity>
 
@@ -2678,7 +2688,7 @@ function ZonaApp() {
                         {(meStats && meStats.name) || 'Oʻyinchi'}
                       </Text>
                       {(savedAcc || (meStats && meStats.verified)) ? (
-                        <Ionicons name="checkmark-circle" size={15} color={c.accent} style={{ marginLeft: 6 }} />
+                        <Text style={{ fontSize: 13, marginLeft: 6 }}>{'\u2705'}</Text>
                       ) : null}
                     </View>
                     <Text style={{ color: c.textSub, fontSize: 11.5, marginTop: 3 }} numberOfLines={1}>
@@ -2686,7 +2696,7 @@ function ZonaApp() {
                     </Text>
                   </View>
 
-                  <Ionicons name="chevron-forward" size={18} color={c.textSub} style={{ opacity: 0.5 }} />
+                  <Text style={{ fontSize: 18, color: c.textSub, opacity: 0.5 }}>{'\u203A'}</Text>
                 </View>
 
                 <View style={{ flexDirection: 'row', marginTop: 14 }}>
@@ -2710,7 +2720,7 @@ function ZonaApp() {
                     marginTop: 13, paddingTop: 12,
                     borderTopWidth: 1, borderTopColor: alpha(myColor, 0.16),
                   }}>
-                    <Ionicons name="star" size={12} color="#F5A623" />
+                    <Text style={{ fontSize: 12 }}>{'\u2B50'}</Text>
                     <Text style={{ color: '#F5A623', fontSize: 12, fontWeight: '800', marginLeft: 6 }}>{plan.name}</Text>
                     {plan.days_left > 0 ? (
                       <Text style={{ color: c.textSub, fontSize: 11, marginLeft: 8 }}>{plan.days_left + ' kun'}</Text>
@@ -2724,7 +2734,7 @@ function ZonaApp() {
                     marginTop: 13, paddingVertical: 11, borderRadius: 13,
                     backgroundColor: c.accent,
                   }}>
-                    <Ionicons name="log-in" size={15} color={c.accentInk} />
+                    <Text style={{ fontSize: 15 }}>{'\uD83D\uDD10'}</Text>
                     <Text style={{ color: c.accentInk, fontSize: 13.5, fontWeight: '800', marginLeft: 7 }}>
                       HISOBGA KIRISH
                     </Text>
@@ -2758,22 +2768,22 @@ function ZonaApp() {
               contentContainerStyle={{ paddingBottom: 80 }}>
 
               {[
-                ['trophy', 'Reyting', '#FFB800', () => closeMenu(openBoard), meStats ? ('#' + meStats.rank) : ''],
-                FL('borders') ? ['sparkles', 'Chegara naqshi', '#C77DFF', () => { loadBorders(); closeMenu(() => setShowBorders(true)); }, bdTotal ? (bdCount + '/' + bdTotal) : ''] : null,
-                ['ribbon', 'Vazifa va yutuqlar', '#00E5A0', () => { loadTasks(); closeMenu(() => setShowTasks(true)); }, tasks ? (tasks.ach_done + '/' + tasks.ach_total) : ''],
-                ['id-card', 'Kartochkam', '#4CC9F0', () => { const z0 = zones[0]; if (!z0) { say('Avval zona oling', 'warn'); return; } closeMenu(() => setInfoZone(Object.assign({}, meStats || {}, { area: z0.area, coords: z0.coords }))); }, ''],
+                ['\uD83C\uDFC6', 'Reyting', '#FFB800', () => closeMenu(openBoard), meStats ? ('#' + meStats.rank) : ''],
+                FL('borders') ? ['\u2728', 'Chegara naqshi', '#C77DFF', () => { loadBorders(); closeMenu(() => setShowBorders(true)); }, bdTotal ? (bdCount + '/' + bdTotal) : ''] : null,
+                ['\uD83C\uDFAF', 'Vazifa va yutuqlar', '#00E5A0', () => { loadTasks(); closeMenu(() => setShowTasks(true)); }, tasks ? (tasks.ach_done + '/' + tasks.ach_total) : ''],
+                ['\uD83D\uDCC7', 'Kartochkam', '#4CC9F0', () => { const z0 = zones[0]; if (!z0) { say('Avval zona oling', 'warn'); return; } closeMenu(() => setInfoZone(Object.assign({}, meStats || {}, { area: z0.area, coords: z0.coords }))); }, ''],
                 null,
-                ['star', 'Tarif', '#F5A623', () => { loadPlan(); closeMenu(() => setShowPlans(true)); }, plan ? plan.name : ''],
-                ['business', 'Biznes sozlamalar', '#8A9BAE', () => closeMenu(openPremium), ''],
-                ['camera', 'Kunlik rasmlar', '#FF6B9D', () => { loadMyPhotos(); closeMenu(() => setShowPhotos(true)); }, (myPhotos && myPhotos.limit) ? (myPhotos.left_today + '/' + myPhotos.limit) : ''],
+                ['\u2B50', 'Tarif', '#F5A623', () => { loadPlan(); closeMenu(() => setShowPlans(true)); }, plan ? plan.name : ''],
+                ['\u2699\uFE0F', 'Biznes sozlamalar', '#8A9BAE', () => closeMenu(openPremium), ''],
+                ['\uD83D\uDCF8', 'Kunlik rasmlar', '#FF6B9D', () => { loadMyPhotos(); closeMenu(() => setShowPhotos(true)); }, (myPhotos && myPhotos.limit) ? (myPhotos.left_today + '/' + myPhotos.limit) : ''],
                 null,
-                FL('invite') ? ['person-add', 'Do\u02BBstni taklif qilish', '#00D9A5', () => closeMenu(inviteFriend), ''] : null,
-                ['share-social', 'Natijamni ulashish', '#00E5A0', () => closeMenu(shareZone), ''],
+                FL('invite') ? ['\uD83D\uDC65', 'Do\u02BBstni taklif qilish', '#00D9A5', () => closeMenu(inviteFriend), ''] : null,
+                ['\uD83D\uDCE4', 'Natijamni ulashish', '#00E5A0', () => closeMenu(shareZone), ''],
                 null,
-                [isDark ? 'sunny' : 'moon', isDark ? 'Kunduzgi rejim' : 'Tungi rejim', '#7B9EFF', () => setIsDark(!isDark), ''],
-                [soundOn ? 'volume-high' : 'volume-mute', 'Ovoz', '#5FD3C4', () => { const nn = !soundOn; setSoundOnState(nn); setSoundOn(nn); }, soundOn ? 'yoniq' : 'o\u02BBchiq'],
-                ['play-circle', 'Qo\u02BBllanma', '#FFA463', () => closeMenu(() => setShowIntro(true)), ''],
-                ['book', 'Qanday o\u02BBynash', '#9C8AFF', () => closeMenu(() => setInfoPage('how')), ''],
+                [isDark ? '\u2600\uFE0F' : '\uD83C\uDF19', isDark ? 'Kunduzgi rejim' : 'Tungi rejim', '#7B9EFF', () => setIsDark(!isDark), ''],
+                [soundOn ? '\uD83D\uDD0A' : '\uD83D\uDD07', 'Ovoz', '#5FD3C4', () => { const nn = !soundOn; setSoundOnState(nn); setSoundOn(nn); }, soundOn ? 'yoniq' : 'o\u02BBchiq'],
+                ['\uD83C\uDFAC', 'Qo\u02BBllanma', '#FFA463', () => closeMenu(() => setShowIntro(true)), ''],
+                ['\uD83D\uDCD6', 'Qanday o\u02BBynash', '#9C8AFF', () => closeMenu(() => setInfoPage('how')), ''],
               ].map(function (x, ix) {
                 if (!x) return <View key={'sp' + ix} style={{ height: 10 }} />;
                 return <MenuRow key={ix} item={x} idx={ix} c={c} tap={tap} />;
@@ -3658,7 +3668,11 @@ function ZonaApp() {
           setMyId(r.user_id);
           sfx('zona');
           say(r.new ? 'Hisob yaratildi!' : 'Xush kelibsiz!', 'ok');
-          fetchMe(r.user_id).then(setMeStats).catch(() => {});
+              /* nom darrov korinsin - server javobini kutmasdan */
+              setMeStats((old) => Object.assign({}, old || {}, {
+                user_id: r.user_id, name: r.name, verified: true, contact: r.contact,
+              }));
+              fetchMe(r.user_id).then(setMeStats).catch(() => {});
           loadPlan();
           refreshRemote();
         }}
