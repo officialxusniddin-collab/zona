@@ -582,7 +582,20 @@ function ZonaApp() {
       if (age > 30 * 24 * 3600 * 1000) { clearTrack(); return; }
       const km = ((t.dist || 0) / 1000).toFixed(2);
       tm = setTimeout(() => {
-          const resumeNow = () => {
+          const resumeNow = async () => {
+            /* uzoqda bolsa soxta chiziq chizilmasin */
+            try {
+              const lastP = t.path[t.path.length - 1];
+              const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+              const dd = distanceM(lastP, { latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+              if (dd > 250) {
+                clearTrack();
+                setWarn('Yo\u02BBl juda uzoqda qolgan - yangi yo\u02BBl boshlandi');
+                setTimeout(() => setWarn(null), 4000);
+                startTracking();
+                return;
+              }
+            } catch (e) {}
             pathRef.current = t.path;
             distRef.current = t.dist || 0;
             startTimeRef.current = t.start || Date.now();
@@ -662,10 +675,10 @@ function ZonaApp() {
     (async () => {
       try {
         const lvl = await Battery.getBatteryLevelAsync();
-        if (lvl > 0 && lvl < 0.18) setWarn('Batareya ' + Math.round(lvl * 100) + '% - quvvat tugasa yoʻl saqlanadi');
+        /* batareya ogohlantirishi yoq */
         sub = Battery.addBatteryLevelListener(({ batteryLevel }) => {
-          if (batteryLevel > 0 && batteryLevel < 0.12)
-            setWarn('Batareya ' + Math.round(batteryLevel * 100) + '% - tez orada ochadi');
+          /* ogohlantirish yoq */
+
         });
       } catch (e) {}
     })();
@@ -1981,6 +1994,14 @@ function ZonaApp() {
   }, [tracking]);
  
   const startTracking = async (resume) => {
+    /* hisobga kirmasdan zona yigib bolmaydi */
+    const _u = userRef.current;
+    if (!_u || !_u.user_id) {
+      tap();
+      setShowLogin(true);
+      say('Zona yig\u02BBish uchun hisobga kiring', 'warn');
+      return;
+    }
     try {
       const on = await Location.hasServicesEnabledAsync();
       if (!on) {
@@ -2005,7 +2026,7 @@ function ZonaApp() {
       const lvl = await Battery.getBatteryLevelAsync();
       const saver = await Battery.isLowPowerModeEnabledAsync();
       if (saver) setWarn(TX('battery', 'Batareya tejash yoqilgan - GPS uzilishi mumkin'));
-      else if (lvl > 0 && lvl < 0.15) setWarn('Batareya ' + Math.round(lvl * 100) + '% - quvvat oling');
+
     } catch (e) {}
  
     if (!resume) {
