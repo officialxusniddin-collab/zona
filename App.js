@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import * as Battery from 'expo-battery';
 import * as MapLibreGL from '@maplibre/maplibre-react-native';
 import { ZonesBatch, PathLine, ZoneImage, ZoneLogos, MeDot } from './MapZone';
@@ -485,7 +486,16 @@ function ZonaApp() {
           });
         } catch (e) {}
         if (st !== 'granted') return;
-        const tk = await Notifications.getExpoPushTokenAsync();
+        let tk = null;
+        try {
+          const pid = (Constants && Constants.expoConfig && Constants.expoConfig.extra &&
+            Constants.expoConfig.extra.eas && Constants.expoConfig.extra.eas.projectId) ||
+            (Constants && Constants.easConfig && Constants.easConfig.projectId) || null;
+          tk = pid ? await Notifications.getExpoPushTokenAsync({ projectId: pid })
+                   : await Notifications.getExpoPushTokenAsync();
+        } catch (e) {
+          try { tk = await Notifications.getExpoPushTokenAsync(); } catch (e2) {}
+        }
         const u = userRef.current;
         if (tk && tk.data && u) savePushToken(u.user_id, tk.data).catch(() => {});
       } catch (e) {}
@@ -1304,7 +1314,7 @@ function ZonaApp() {
       if (atHome) {
         const myHa = my.reduce((t, q) => t + (q.area || 0), 0);
         const oldHa = myHaRef.current || 0;
-        const justSaved = Date.now() - (lastZoneAtRef.current || 0) < 60000;
+        const justSaved = Date.now() - (lastZoneAtRef.current || 0) < 300000;
         if (!justSaved && oldHa > 0 && myHa > 0 && myHa < oldHa * 0.80 && (oldHa - myHa) > 2000) {
           sfx('lost');
           Alert.alert('Zonangiz qoʻlga oʻtdi', 'Kimdir zonangizni bosib oldi');
@@ -2313,12 +2323,14 @@ function ZonaApp() {
         <MapLibreGL.Camera
           ref={camRef}
           followUserLocation={follow && !tracking}
-          followUserMode="normal"
-          followZoomLevel={16.5}
+          followUserMode={tracking ? 'course' : 'normal'}
+          followZoomLevel={tracking ? 17.2 : 16.5}
+          followPitch={tracking || is3D ? 55 : 0}
+          padding={tracking ? { paddingTop: 0, paddingBottom: SCREEN_H * 0.30, paddingLeft: 0, paddingRight: 0 } : undefined}
           defaultSettings={{
             centerCoordinate: [location.longitude, location.latitude],
             zoomLevel: 16.5,
-            pitch: 60,
+            pitch: 55,
           }}
         />
 
