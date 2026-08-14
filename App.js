@@ -611,14 +611,20 @@ function ZonaApp() {
 
           const age = Date.now() - (t.at || 0);
           if (age < 30 * 60 * 1000) {
-            Location.hasServicesEnabledAsync().then((on) => {
+            Location.hasServicesEnabledAsync().then(async (on) => {
               if (!on) { clearTrack(); setWarn('Joylashuv o\u02BBchirilgan - START bosib qayta boshlang'); return; }
+              /* uzoqda bolsa umuman soramaymiz */
+              try {
+                const lastP = t.path[t.path.length - 1];
+                const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                const dd = distanceM(lastP, { latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+                if (dd > 250) { clearTrack(); return; }
+              } catch (e) {}
               Alert.alert('Yo\u02BBlingiz davom etmoqda', km + ' km yurgansiz. Davom etasizmi?', [
                 { text: 'Yo\u02BBq', style: 'cancel', onPress: () => clearTrack() },
                 { text: 'Davom', onPress: resumeNow },
               ]);
-
-            }).catch(() => { resumeNow(); });
+            }).catch(() => {});
             setTimeout(() => say(TX('resumed', 'Yoʻlingiz davom etmoqda'), 'ok'), 900);
           } else {
             Alert.alert(
@@ -1344,10 +1350,16 @@ function ZonaApp() {
         saveZones(mapped);
       } else if (!atHome && my.length > 0) {
         setZones((old) => {
+          /* mavjud zona kengaygan bolishi mumkin - koordinatani yangilaymiz */
+          const mp = new Map(my.map((z) => [z.id, z]));
+          const upd = old.map((o) => {
+            const z = mp.get(o.id);
+            return z ? { id: z.id, coords: z.coords, area: z.area } : o;
+          });
           const ids = new Set(old.map((o) => o.id));
           const add = my.filter((z) => !ids.has(z.id))
             .map((z) => ({ id: z.id, coords: z.coords, area: z.area }));
-          return add.length ? [...old, ...add] : old;
+          return add.length ? [...upd, ...add] : upd;
         });
       }
       setOnline(true);
@@ -2305,12 +2317,13 @@ function ZonaApp() {
   const myId = user ? user.user_id : null;
   const myAvatar = meStats && meStats.avatar && meStats.avatar_ok ? meStats.avatar : null;
   const myColor = meStats && meStats.zone_color ? meStats.zone_color : c.accent;
-  const visibleRemote = (() => {
-    const arr = remoteZones.slice().sort((a, b) => b.area - a.area);
-    // Logolar ustma-ust tushmasin: kattasi qoladi, kichigi yashiriladi
+  const visibleRemote = remoteZones.slice().sort((a, b) => b.area - a.area).slice(0, 300);
+
+  /* logolar ustma-ust tushmasin - faqat logo royxati uchun */
+  const logoZones = (() => {
     const minGap = zoomDelta * 0.02;
     const kept = [];
-    for (const z of arr) {
+    for (const z of visibleRemote) {
       const cz = centerOf(z.coords);
       let clash = false;
       for (const k of kept) {
@@ -2319,7 +2332,7 @@ function ZonaApp() {
             Math.abs(cz.longitude - ck.longitude) < minGap) { clash = true; break; }
       }
       if (!clash) kept.push(z);
-      if (kept.length >= 300) break;
+      if (kept.length >= 120) break;
     }
     return kept;
   })();
@@ -2384,6 +2397,24 @@ function ZonaApp() {
           }}
         />
 
+        {/* asosiy yollar: asfalt rang, uzoqda ingichka */}
+        <MapLibreGL.Layer id="Major road" existing style={{
+          lineColor: isDark ? '#4A5058' : '#C4C9D0',
+          lineWidth: ['interpolate', ['linear'], ['zoom'], 8, 0.6, 11, 1.6, 14, 7.5, 17, 26, 20, 58],
+        }} />
+        <MapLibreGL.Layer id="Major road outline" existing style={{
+          lineColor: isDark ? '#33373D' : '#ABB1B9',
+          lineWidth: ['interpolate', ['linear'], ['zoom'], 8, 1.2, 11, 2.6, 14, 10, 17, 32, 20, 70],
+        }} />
+        <MapLibreGL.Layer id="Highway" existing style={{
+          lineColor: isDark ? '#565C66' : '#BCC1C8',
+          lineWidth: ['interpolate', ['linear'], ['zoom'], 6, 0.5, 10, 1.4, 14, 9, 17, 31, 20, 70],
+        }} />
+        <MapLibreGL.Layer id="Highway outline" existing style={{
+          lineColor: isDark ? '#3A3F46' : '#A2A8B0',
+          lineWidth: ['interpolate', ['linear'], ['zoom'], 6, 1, 10, 2.4, 14, 12, 17, 38, 20, 84],
+        }} />
+
 
 
         <ZonesBatch
@@ -2441,7 +2472,7 @@ function ZonaApp() {
         <MeDot tracking={tracking} heading={myHead} lat={location ? location.latitude : null} lon={location ? location.longitude : null} color={myColor} />
 
         <ZoneLogos items={[
-          ...visibleRemote.filter((z) => z.logo || z.avatar).map((z) => ({ id: z.id, coords: z.coords, url: z.logo || z.avatar, area: z.area })),
+          ...logoZones.filter((z) => z.logo || z.avatar).map((z) => ({ id: z.id, coords: z.coords, url: z.logo || z.avatar, area: z.area })),
           ...((meStats && (meStats.logo || meStats.avatar)) ? zones.map((z) => { const mz = visibleRemote.find((q) => q.id === z.id); return { id: 'my' + z.id, coords: z.coords, url: (mz && (mz.logo || mz.avatar)) || meStats.logo || meStats.avatar, area: z.area }; }) : []),
         ]} />
 
