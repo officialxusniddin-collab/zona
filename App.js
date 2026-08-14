@@ -1891,7 +1891,13 @@ function ZonaApp() {
         const sp = speedRef.current || 0;
         const zm = sp > 11 ? 14.6 : sp > 4 ? 15.0 : 15.4;
         setCamHead(hd);
-        if (camRef.current) camRef.current.easeTo({ center: [lastPt.longitude, lastPt.latitude], bearing: hd, zoom: zm, pitch: trackingRef.current ? 50 : (is3D ? 60 : 0), padding: trackingRef.current ? { paddingTop: 0, paddingBottom: SCREEN_H * 0.40, paddingLeft: 0, paddingRight: 0 } : undefined, duration: 900 });
+        /* markazni oldinga suramiz - x nuqta pastroqda korinadi */
+        const _ah = (hd * Math.PI) / 180;
+        const _off = 0.0016;
+        const _cl = Math.cos((lastPt.latitude * Math.PI) / 180) || 1;
+        const _clat = lastPt.latitude + Math.cos(_ah) * _off;
+        const _clon = lastPt.longitude + (Math.sin(_ah) * _off) / _cl;
+        if (camRef.current) camRef.current.easeTo({ center: [_clon, _clat], bearing: hd, zoom: zm, pitch: trackingRef.current ? 50 : (is3D ? 60 : 0), duration: 900 });
       }
     }
   };
