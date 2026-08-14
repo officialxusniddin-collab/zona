@@ -332,7 +332,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
       <GeoJSONSource id={sd} data={lineOf(bolt)} lineMetrics={true}>
         {/* 0) tashqi halo - 3-darajadan */}
         {F.halo > 0 ? (
-          <Layer id={sd + '_halo'} type="line" beforeId="logoLay"
+          <Layer id={sd + '_halo'} type="line" beforeId="meHalo"
             layout={{ 'line-cap': 'round', 'line-join': 'round' }}
             paint={{
               'line-color': cOut,
@@ -343,7 +343,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
         ) : null}
 
         {/* 1) eng keng gaz */}
-        <Layer id={sd + '_h1'} type="line" beforeId="logoLay"
+        <Layer id={sd + '_h1'} type="line" beforeId="meHalo"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
           paint={{
             'line-color': cOut,
@@ -353,7 +353,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
           }} />
 
         {/* 2) o'rta porlash */}
-        <Layer id={sd + '_h2'} type="line" beforeId="logoLay"
+        <Layer id={sd + '_h2'} type="line" beforeId="meHalo"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
           paint={{
             'line-color': cOut,
@@ -363,7 +363,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
           }} />
 
         {/* 3) yaqin porlash */}
-        <Layer id={sd + '_h3'} type="line" beforeId="logoLay"
+        <Layer id={sd + '_h3'} type="line" beforeId="meHalo"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
           paint={{
             'line-color': cOut,
@@ -374,7 +374,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
 
         {/* 4) tana */}
         {cf.flow ? (
-          <Layer id={sd + '_b'} type="line" beforeId="logoLay"
+          <Layer id={sd + '_b'} type="line" beforeId="meHalo"
             layout={{ 'line-cap': 'round', 'line-join': 'round' }}
             paint={{
               'line-width': zw(wBody),
@@ -382,7 +382,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
               'line-gradient': grad(),
             }} />
         ) : (
-          <Layer id={sd + '_b'} type="line" beforeId="logoLay"
+          <Layer id={sd + '_b'} type="line" beforeId="meHalo"
             layout={{ 'line-cap': 'round', 'line-join': 'round' }}
             paint={{
               'line-color': cBody,
@@ -394,7 +394,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
 
         {/* 4.5) qarama-qarshi oqim - 4-darajadan */}
         {F.dual ? (
-          <Layer id={sd + '_dual'} type="line" beforeId="logoLay"
+          <Layer id={sd + '_dual'} type="line" beforeId="meHalo"
             layout={{ 'line-cap': 'round', 'line-join': 'round' }}
             paint={{
               'line-width': zw(wBody * 0.42),
@@ -404,7 +404,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
         ) : null}
 
         {/* 5) yadro - deyarli oq */}
-        <Layer id={sd + '_c'} type="line" beforeId="logoLay"
+        <Layer id={sd + '_c'} type="line" beforeId="meHalo"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
           paint={{
             'line-color': cCore,
@@ -415,7 +415,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
 
       {/* ikkinchi razryad */}
       <GeoJSONSource id={sd + '_2'} data={lineOf(bolt2)}>
-        <Layer id={sd + '_2g'} type="line" beforeId="logoLay"
+        <Layer id={sd + '_2g'} type="line" beforeId="meHalo"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
           paint={{
             'line-color': cOut,
@@ -423,7 +423,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
             'line-opacity': 0.16 * fl,
             'line-blur': wGlow * 0.3,
           }} />
-        <Layer id={sd + '_2b'} type="line" beforeId="logoLay"
+        <Layer id={sd + '_2b'} type="line" beforeId="meHalo"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
           paint={{
             'line-color': cBody,
@@ -431,7 +431,7 @@ export default function ZoneBorder({ id, coords, color, area, active, zoom, code
             'line-opacity': 0.32 * fl,
             'line-blur': 1.2,
           }} />
-        <Layer id={sd + '_2c'} type="line" beforeId="logoLay"
+        <Layer id={sd + '_2c'} type="line" beforeId="meHalo"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
           paint={{
             'line-color': cCore,

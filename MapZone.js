@@ -192,75 +192,46 @@ export function ZoneLogos({ items }) {
   );
 }
 /* O'z joylashuvim - logolar ostida turadi */
-export function MeDot({ lat, lon, heading, color }) {
+export function MeDot({ lat, lon, heading, color, tracking }) {
   if (lat == null || lon == null) return null;
-  const hd = heading == null ? 0 : heading;
   const col = color || '#00E5A0';
-
-  const rad = (hd * Math.PI) / 180;
-  const cosL = Math.cos((lat * Math.PI) / 180) || 1;
-  const D = 0.00028;
-  const W = 0.42;
-  const mk = (ang, dist) => [
-    lon + (Math.sin(ang) * dist) / cosL,
-    lat + Math.cos(ang) * dist,
-  ];
-
-  const cone = {
-    type: 'Feature',
-    properties: { k: 'cone' },
-    geometry: {
-      type: 'Polygon',
-      coordinates: [[
-        [lon, lat],
-        mk(rad - W, D),
-        mk(rad - W * 0.5, D * 1.12),
-        mk(rad, D * 1.18),
-        mk(rad + W * 0.5, D * 1.12),
-        mk(rad + W, D),
-        [lon, lat],
-      ]],
-    },
-  };
-
   const pt = {
     type: 'Feature',
     properties: { k: 'dot' },
     geometry: { type: 'Point', coordinates: [lon, lat] },
   };
-
-  const data = { type: 'FeatureCollection', features: [cone, pt] };
-
+  const data = { type: 'FeatureCollection', features: [pt] };
   return (
     <GeoJSONSource id="meSrc" data={data}>
       <Layer
         id="meHalo"
         type="circle"
-        filter={['==', ['get', 'k'], 'dot']}
         paint={{
-          'circle-radius': 22,
+          'circle-radius': 26,
           'circle-color': col,
-          'circle-opacity': 0.16,
-          'circle-blur': 0.6,
+          'circle-opacity': 0.20,
+          'circle-blur': 0.9,
         }}
       />
       <Layer
         id="meRing"
         type="circle"
-        filter={['==', ['get', 'k'], 'dot']}
         paint={{
-          'circle-radius': 9,
+          'circle-radius': 11,
           'circle-color': '#FFFFFF',
-          'circle-opacity': 0.95,
+          'circle-opacity': 1,
+          'circle-stroke-width': 1.2,
+          'circle-stroke-color': 'rgba(0,0,0,0.10)',
         }}
       />
       <Layer
         id="meCore"
         type="circle"
-        filter={['==', ['get', 'k'], 'dot']}
         paint={{
-          'circle-radius': 6.5,
+          'circle-radius': 7.5,
           'circle-color': col,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': 'rgba(255,255,255,0.45)',
         }}
       />
     </GeoJSONSource>

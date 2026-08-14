@@ -1879,7 +1879,7 @@ function ZonaApp() {
         const sp = speedRef.current || 0;
         const zm = sp > 11 ? 14.6 : sp > 4 ? 15.0 : 15.4;
         setCamHead(hd);
-        if (camRef.current) camRef.current.easeTo({ center: [lastPt.longitude, lastPt.latitude], bearing: hd, zoom: zm, pitch: trackingRef.current ? 50 : (is3D ? 60 : 0), duration: 900 });
+        if (camRef.current) camRef.current.easeTo({ center: [lastPt.longitude, lastPt.latitude], bearing: hd, zoom: zm, pitch: trackingRef.current ? 50 : (is3D ? 60 : 0), padding: trackingRef.current ? { paddingTop: 0, paddingBottom: SCREEN_H * 0.40, paddingLeft: 0, paddingRight: 0 } : undefined, duration: 900 });
       }
     }
   };
@@ -2103,6 +2103,11 @@ function ZonaApp() {
   };
  
   const stopTracking = async () => {
+    /* STOP bosilganda 2D holatga qaytadi */
+    try {
+      setIs3D(false);
+      if (camRef.current) camRef.current.easeTo({ pitch: 0, duration: 600 });
+    } catch (e) {}
     trackingRef.current = false;
     try {
       const started = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK);
@@ -2320,7 +2325,8 @@ function ZonaApp() {
   })();
 
   const myHead = (() => {
-    if (location && location.heading != null && location.heading >= 0) return location.heading - camHead;
+      if (location && location.heading != null && location.heading >= 0) return location.heading;
+      if (camHead != null) return camHead;
     return 0;
   })();
 
@@ -2432,11 +2438,11 @@ function ZonaApp() {
         ))}
 
 
-        <MeDot lat={location ? location.latitude : null} lon={location ? location.longitude : null} color={myColor} />
+        <MeDot tracking={tracking} heading={myHead} lat={location ? location.latitude : null} lon={location ? location.longitude : null} color={myColor} />
 
         <ZoneLogos items={[
           ...visibleRemote.filter((z) => z.logo || z.avatar).map((z) => ({ id: z.id, coords: z.coords, url: z.logo || z.avatar, area: z.area })),
-          ...((meStats && (meStats.logo || meStats.avatar)) ? zones.map((z) => ({ id: 'my' + z.id, coords: z.coords, url: meStats.logo || meStats.avatar, area: z.area })) : []),
+          ...((meStats && (meStats.logo || meStats.avatar)) ? zones.map((z) => { const mz = visibleRemote.find((q) => q.id === z.id); return { id: 'my' + z.id, coords: z.coords, url: (mz && (mz.logo || mz.avatar)) || meStats.logo || meStats.avatar, area: z.area }; }) : []),
         ]} />
 
 
