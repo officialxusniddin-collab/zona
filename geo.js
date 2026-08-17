@@ -321,26 +321,53 @@ export function findZoneTouch(path, myZones) {
     if (!z.coords || z.coords.length < 3) continue;
     if (ptInPoly(last, z.coords)) { inZone = z; break; }
   }
+  /* ichida emas - chetiga yaqinmi (25 m) */
+  if (!inZone) {
+    for (const z of myZones) {
+      if (!z.coords || z.coords.length < 3) continue;
+      let mn = 1e9;
+      for (const p of z.coords) {
+        const d = distanceM(last, p);
+        if (d < mn) mn = d;
+      }
+      if (mn < 25) { inZone = z; break; }
+    }
+  }
   if (!inZone) return null;
 
   /* orqaga yurib, zonadan chiqqan joyni topamiz */
+  /* orqaga yurib, zonaga tegib turgan joyni topamiz */
+  const yaqin = (p) => {
+    if (ptInPoly(p, inZone.coords)) return true;
+    let mn = 1e9;
+    for (const q of inZone.coords) {
+      const d = distanceM(p, q);
+      if (d < mn) mn = d;
+    }
+    return mn < 25;
+  };
+  /* oxiridan orqaga: avval zonadan uzoqlashgan joyni, keyin qaytib tekkan joyni topamiz */
+  /* oxirgi tegish va undan oldingi eng uzoq tegishni topamiz */
+  let endAt = -1;
+  for (let i = n - 1; i >= 8; i--) {
+    if (yaqin(path[i])) { endAt = i; break; }
+  }
+  if (endAt < 0) return null;
   let exitAt = -1;
-  for (let i = n - 2; i >= 0; i--) {
-    if (!ptInPoly(path[i], inZone.coords)) { continue; }
-    /* bu nuqta ham ichida - demak shu yerdan chiqqan */
-    exitAt = i;
-    break;
+  for (let i = 0; i < endAt - 6; i++) {
+    if (yaqin(path[i])) { exitAt = i; break; }
   }
   if (exitAt < 0) return null;
 
   /* chiqqandan keyin yetarlicha yurganmi */
   let walked = 0;
   for (let i = exitAt + 1; i < n; i++) walked += distanceM(path[i - 1], path[i]);
-  if (walked < 120) return null;
+  if (walked < 120) { console.log('[ZT4] kam yurdi:', Math.round(walked)); return null; }
 
   const loop = path.slice(exitAt, n);
   if (loop.length < 8) return null;
-  if (!shapeOk(loop)) return null;
+  /* zona chegarasi halqani yopadi - shakl tekshiruvi yumshoq */
+  if (polygonAreaM2(loop) < 500) { console.log('[ZT5] kichik maydon:', Math.round(polygonAreaM2(loop))); return null; }
 
   return { loop: [...loop, loop[0]], cutIndex: exitAt, point: path[exitAt], perim: walked, zoneId: inZone.id };
 }

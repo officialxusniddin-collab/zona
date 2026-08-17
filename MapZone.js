@@ -158,7 +158,13 @@ export function ZoneLogos({ items }) {
       dLon = Math.max(dLon, Math.abs(p.longitude - cy));
     }
     best = { latitude: cx, longitude: cy };
-    const key = 'lg_' + it.id;
+    /* URL dagi ?v= qismi kalitga qoshiladi - rasm yangilanganda ID ham ozgaradi */
+    let _ver = '';
+    try {
+      const _q = String(it.url || '').split('?v=')[1];
+      if (_q) _ver = '_' + _q;
+    } catch (e) {}
+    const key = 'lg_' + it.id + _ver;
     imgs[key] = it.url;
     feats.push({
       type: 'Feature',

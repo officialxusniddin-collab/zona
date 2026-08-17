@@ -410,6 +410,7 @@ function ZonaApp() {
   const startTimeRef = useRef(0);
   const lastCamRef = useRef(0);
   const headRef = useRef(0);
+  const menuSyncRef = useRef(false);
   const followTimerRef = useRef(null);
   const [follow, setFollow] = useState(true);
   const [camHead, setCamHead] = useState(0);
@@ -449,18 +450,24 @@ function ZonaApp() {
   }, []);
  
   useEffect(() => {
+    /* saqlangan hisob bolmasa - yangi yaratmaymiz, kirish soraladi */
+    AsyncStorage.getItem('zona_user').then((sv) => {
+      if (!sv) { setMustAuth(true); setOnline(true); return; }
     ensureUser()
       .then((u) => {
+        console.log('[EU] natija:', u && u.name, '| id:', u && u.user_id);
         userRef.current = u;
         setUser(u);
         setOnline(true);
         fetchMe(u.user_id).then((m) => {
+          console.log('[ME] serverdan:', m && m.name, '| id:', m && m.user_id);
           setMeStats(m);
           if (m && !m.verified) setMustAuth(true);
       else if (m && m.name && m.name.indexOf('Oyinchi') === 0) setNeedNick(true);
         }).catch(() => {});
       })
       .catch(() => setOnline(false));
+    }).catch(() => setMustAuth(true));
   }, []);
  
   useEffect(() => {
@@ -588,7 +595,7 @@ function ZonaApp() {
               const lastP = t.path[t.path.length - 1];
               const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
               const dd = distanceM(lastP, { latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-              if (dd > 250) {
+              if (dd > 5) {
                 clearTrack();
                 setWarn('Yo\u02BBl juda uzoqda qolgan - yangi yo\u02BBl boshlandi');
                 setTimeout(() => setWarn(null), 4000);
@@ -618,7 +625,7 @@ function ZonaApp() {
                 const lastP = t.path[t.path.length - 1];
                 const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
                 const dd = distanceM(lastP, { latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-                if (dd > 250) { clearTrack(); return; }
+                if (dd > 5) { clearTrack(); return; }
               } catch (e) {}
               Alert.alert('Yo\u02BBlingiz davom etmoqda', km + ' km yurgansiz. Davom etasizmi?', [
                 { text: 'Yo\u02BBq', style: 'cancel', onPress: () => clearTrack() },
@@ -1174,11 +1181,22 @@ function ZonaApp() {
       [
         { text: 'Bekor', style: 'cancel' },
         { text: 'Chiqish', style: 'destructive', onPress: async () => {
+            /* Google sessiyasini ham tozalaymiz */
+            try {
+              const GS = require('@react-native-google-signin/google-signin').GoogleSignin;
+              await GS.signOut().catch(() => {});
+              await GS.revokeAccess().catch(() => {});
+            } catch (e) {}
           try {
-            await AsyncStorage.multiRemove(['zona_user', 'zona_device_id', 'zona_zones_v1', 'zona_track_v1']);
+            await AsyncStorage.multiRemove(['zona_user', 'zona_zones_v1', 'zona_track_v1']);
           } catch (e) {}
           setSavedAcc(null);
-          setMeStats(null);
+            setMeStats(null);
+            /* tarif ham tozalansin */
+            setPlan(null);
+            setMyPhotos({ photos: [], left_today: 0 });
+            setTasks(null);
+            menuSyncRef.current = false;
           setZones([]);
           setRemoteZones([]);
           userRef.current = null;
@@ -1259,6 +1277,25 @@ function ZonaApp() {
   ).current;
 
   const openMenu = () => {
+    /* faqat birinchi ochilishda profil yangilanadi */
+    try {
+      const _u = userRef.current;
+      if (_u && _u.user_id && !menuSyncRef.current) {
+        menuSyncRef.current = true;
+        fetchMe(_u.user_id).then((m) => {
+          if (m && m.user_id) { setMeStats(m); setNameInput(m.name || ''); }
+        }).catch(() => {});
+      }
+    } catch (e) {}
+    /* menyu ochilganda profil yangilansin */
+    try {
+      const _u = userRef.current;
+      if (_u && _u.user_id) {
+        fetchMe(_u.user_id).then((m) => {
+          if (m && m.user_id) { setMeStats(m); setNameInput(m.name || ''); }
+        }).catch(() => {});
+      }
+    } catch (e) {}
     menuH.setValue(0);
     menuHRef.current = 0;
     setMenuOpen(true);
@@ -1491,6 +1528,15 @@ function ZonaApp() {
     setUploading(true);
     try {
       await uploadAvatar(u.user_id, res.assets[0].uri);
+      /* karta majburiy yangilanadi - eski rasm qolmasin */
+      try {
+        const _m = await fetchMe(u.user_id);
+        if (_m && _m.user_id) { setMeStats(_m); setNameInput(_m.name || ''); }
+        setMyZoneImgs([]);
+        setRemoteZones([]);
+        lastRemoteRef.current = 0;
+        await refreshRemote();
+      } catch (e) {}
       say('Rasm yuborildi - tekshiruvdan oʻtgach koʻrinadi', 'ok');
       openBoard();
     } catch (e) {
@@ -1515,9 +1561,20 @@ function ZonaApp() {
     setUploading(true);
     try {
       await uploadLogo(u.user_id, res.assets[0].uri);
+      /* karta majburiy yangilanadi - eski rasm qolmasin */
+      try {
+        const _m = await fetchMe(u.user_id);
+        if (_m && _m.user_id) { setMeStats(_m); setNameInput(_m.name || ''); }
+        setMyZoneImgs([]);
+        setRemoteZones([]);
+        lastRemoteRef.current = 0;
+        await refreshRemote();
+      } catch (e) {}
       say('Logo qoʻyildi', 'ok');
       const m = await fetchMe(u.user_id);
       setMeStats(m);
+      /* kartadagi rasm ham yangilansin */
+      try { setMyZoneImgs([]); refreshRemote(); } catch (e) {}
     } catch (e) { Alert.alert('Logo yuklanmadi', 'Internet bor-yoʻqligini tekshiring yoki kichikroq rasm tanlang.'); }
     setUploading(false);
   };
@@ -1538,6 +1595,15 @@ function ZonaApp() {
     setUploading(true);
     try {
       await uploadBanner(u.user_id, res.assets[0].uri);
+      /* karta majburiy yangilanadi - eski rasm qolmasin */
+      try {
+        const _m = await fetchMe(u.user_id);
+        if (_m && _m.user_id) { setMeStats(_m); setNameInput(_m.name || ''); }
+        setMyZoneImgs([]);
+        setRemoteZones([]);
+        lastRemoteRef.current = 0;
+        await refreshRemote();
+      } catch (e) {}
       const m = await fetchMe(u.user_id);
       setMeStats(m);
       refreshRemote();
@@ -1558,7 +1624,9 @@ function ZonaApp() {
       if (!u) { say('Avval hisobga kiring', 'warn'); return; }
       try {
         const m = await fetchMe(u.user_id);
-        setMeStats(m);
+      setMeStats(m);
+      /* kartadagi rasm ham yangilansin */
+      try { setMyZoneImgs([]); refreshRemote(); } catch (e) {}
         setTimeout(() => openPremium(), 250);
       } catch (e) { say('Internet yoʻq - qayta urining', 'warn'); }
       return;
@@ -1598,6 +1666,8 @@ function ZonaApp() {
       await updateProfile(u.user_id, pf);
       const m = await fetchMe(u.user_id);
       setMeStats(m);
+      /* kartadagi rasm ham yangilansin */
+      try { setMyZoneImgs([]); refreshRemote(); } catch (e) {}
       setShowPrem(false);
       refreshRemote();
     } catch (e) {
@@ -2186,7 +2256,17 @@ function ZonaApp() {
   if (error) {
     return (
       <View style={[styles.center, { backgroundColor: c.screenBg }]}>
-        <Text style={{ color: c.textMain, fontSize: 15, textAlign: 'center' }}>{error}</Text>
+        <Text style={{ fontSize: 40, marginBottom: 14 }}>{'\uD83D\uDCCD'}</Text>
+        <Text style={{ color: c.textMain, fontSize: 15, textAlign: 'center', lineHeight: 22 }}>{error}</Text>
+        <TouchableOpacity
+          onPress={() => { setError(null); Location.requestForegroundPermissionsAsync().catch(() => {}); }}
+          style={{ marginTop: 24, backgroundColor: c.accent, paddingVertical: 15, paddingHorizontal: 40, borderRadius: 16 }}>
+          <Text style={{ color: c.accentInk, fontSize: 15, fontWeight: '800' }}>Qayta urinish</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => { Linking.openSettings().catch(() => {}); }}
+          style={{ marginTop: 10, paddingVertical: 13, paddingHorizontal: 30 }}>
+          <Text style={{ color: c.textSub, fontSize: 14, fontWeight: '600' }}>Sozlamalarni ochish</Text>
+        </TouchableOpacity>
 
       {splash && (
         <Animated.View style={[styles.splash, { opacity: spFade }]} pointerEvents="none">
@@ -2359,7 +2439,11 @@ function ZonaApp() {
         mapStyle={'https://api.maptiler.com/maps/' + (isDark ? 'streets-v4-dark' : 'streets-v4') + '/style.json?key=' + mapKey}
         logoEnabled={false}
         attributionEnabled={false}
-        compassEnabled={false}
+          compassEnabled={false}
+          zoomEnabled={true}
+          scrollEnabled={true}
+          pitchEnabled={true}
+          rotateEnabled={true}
         onRegionIsChanging={(e) => {
           if (!e || !e.properties || !e.geometry) return;
           const z = e.properties.zoomLevel;
@@ -3756,6 +3840,7 @@ function ZonaApp() {
           }
         }}
         onDone={(r) => {
+          console.log('[LG] kirish:', r && r.name, '| yangi:', r && r.new, '| pochta:', r && r.contact);
           setShowLogin(false);
           setMustAuth(false);
           setAskAuth(false);
@@ -3764,6 +3849,8 @@ function ZonaApp() {
           const u = { user_id: r.user_id, name: r.name };
           userRef.current = u;
           setUser(u);
+          /* saqlangan hisob ham yangilansin */
+          AsyncStorage.setItem('zona_user', JSON.stringify(u)).catch(() => {});
           setMyId(r.user_id);
           sfx('zona');
           say(r.new ? 'Hisob yaratildi!' : 'Xush kelibsiz!', 'ok');
@@ -3771,7 +3858,30 @@ function ZonaApp() {
               setMeStats((old) => Object.assign({}, old || {}, {
                 user_id: r.user_id, name: r.name, verified: true, contact: r.contact,
               }));
-              fetchMe(r.user_id).then(setMeStats).catch(() => {});
+              /* serverdan toliq malumot - kesh majburiy almashtiriladi */
+              fetchMe(r.user_id).then((m) => {
+                if (m && m.user_id) {
+                  setMeStats(m);
+                  const u2 = { user_id: m.user_id, name: m.name };
+                  userRef.current = u2;
+                  setUser(u2);
+                  setMyId(m.user_id);
+                  AsyncStorage.setItem('zona_user', JSON.stringify(u2)).catch(() => {});
+                  setNeedNick(!!(m.name && m.name.indexOf('Oyinchi') === 0));
+                  /* toliq yangilash - eski malumot qolmasin */
+                  try {
+                    setZones([]);
+                    setMyZoneImgs([]);
+                    setRemoteZones([]);
+                    zonesRef.current = [];
+                    myHaRef.current = 0;
+                    setNameInput(m.name || '');
+                    loadPlan();
+                    refreshRemote();
+                    loadTasks();
+                  } catch (e) {}
+                }
+              }).catch(() => {});
           loadPlan();
           refreshRemote();
         }}

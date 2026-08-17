@@ -4,7 +4,10 @@ import {
   ActivityIndicator, Animated, Keyboard, Modal,
   KeyboardAvoidingView, Platform, ScrollView, Linking,
 } from 'react-native';
-import { authSend, authVerify } from './api';
+import { authSend, authVerify, googleLogin } from './api';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AC = '#00C98A';
 const BG = '#FFFFFF';
@@ -74,6 +77,35 @@ export default function Login({ visible, onClose, onDone, force }) {
     setBusy(false);
   };
 
+  const gLogin = async () => {
+    try {
+      setBusy(true);
+      setErr('');
+      const cid = (Constants && Constants.expoConfig && Constants.expoConfig.extra &&
+        Constants.expoConfig.extra.googleWebClientId) || '';
+      GoogleSignin.configure({ webClientId: cid, offlineAccess: false, scopes: ['email'] });
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const res = await GoogleSignin.signIn();
+      const tok = (res && res.data && res.data.idToken) || (res && res.idToken) || null;
+      if (!tok) throw new Error('Google token olinmadi');
+      let dev = null;
+      try { dev = await AsyncStorage.getItem('zona_device_id'); } catch (e) {}
+      const r = await googleLogin(tok, dev);
+      /* hisobni saqlaymiz - keyingi ochilishda soralmasin */
+      try {
+        await AsyncStorage.setItem('zona_user', JSON.stringify({ user_id: r.user_id, name: r.name }));
+      } catch (e) {}
+      onDone(r);
+    } catch (e) {
+      const m = String((e && e.message) || e);
+      if (m.indexOf('SIGN_IN_CANCELLED') < 0 && m.indexOf('cancel') < 0) {
+        setErr(m.slice(0, 90));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const verify = async () => {
     if (code.trim().length !== 6) return;
     setBusy(true); setErr('');
@@ -115,11 +147,10 @@ export default function Login({ visible, onClose, onDone, force }) {
 
                 <View style={{ height: 40 }} />
 
-                <TouchableOpacity activeOpacity={0.85} disabled
-                  style={[s.big, { backgroundColor: CARD, borderColor: LINE, opacity: 0.45 }]}>
+                <TouchableOpacity activeOpacity={0.85} onPress={gLogin} disabled={busy}
+                  style={[s.big, { backgroundColor: '#FFFFFF', borderColor: LINE }]}>
                   <Text style={{ fontSize: 16, marginRight: 11 }}>{'\uD83C\uDF10'}</Text>
-                  <Text style={[s.bigTxt, { color: '#A8B4C0' }]}>Google orqali</Text>
-                  <View style={s.soon}><Text style={s.soonTxt}>tez orada</Text></View>
+                  <Text style={[s.bigTxt, { color: '#0B1015' }]}>Google orqali</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity activeOpacity={0.85} onPress={() => { setMode(1); setContact(''); }}

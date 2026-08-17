@@ -498,3 +498,14 @@ export async function fetchWalkBoard(limit) {
   const j = await res.json();
   return j.top || [];
 }
+
+export async function googleLogin(idToken, deviceId) {
+  const res = await fetch(BASE + '/auth/google', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id_token: idToken, device_id: deviceId || null }),
+  });
+  const j = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((j && j.detail) || 'Google kirish xatosi');
+  return j;
+}
