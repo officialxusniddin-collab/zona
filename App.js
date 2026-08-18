@@ -792,7 +792,9 @@ function ZonaApp() {
         { text: 'Bekor', style: 'cancel' },
         { text: 'Ochirish', style: 'destructive', onPress: async () => {
           try {
-            await deleteOneZone(u.user_id, z.id);
+                const _zid = z.id || z.zone_id || null;
+                if (!_zid) { say('Zona aniqlanmadi', 'err'); return; }
+                await deleteOneZone(u.user_id, _zid);
             setZones((old) => {
               const nz = old.filter((q) => q.id !== z.id);
               saveZones(nz);
@@ -1739,6 +1741,19 @@ function ZonaApp() {
       }
     }
 
+    /* GPS sakrashi - 300 m dan uzoq bolsa yol qaytadan boshlanadi */
+    try {
+      const _pp = pathRef.current;
+      if (_pp.length > 0) {
+        const _d = distanceM(_pp[_pp.length - 1], pt);
+        if (_d > 300) {
+          console.log('[SK] sakrash:', Math.round(_d), 'm - yol tozalandi');
+          pathRef.current = [pt];
+          setPath([pt]);
+          return true;
+        }
+      }
+    } catch (e) {}
     pathRef.current.push(pt);
     /* juda uzun yol ilovani sekinlashtiradi - oxirgi 6000 nuqta yetarli */
     if (pathRef.current.length > 6000) {
@@ -1754,7 +1769,20 @@ function ZonaApp() {
       if (area >= MIN_AREA_M2) {
         const prev = pendingRef.current;
         const dArea = dismissedAreaRef.current || 0;
-        const okShow = !prev ? (dismissedRef.current === 0 || area > dArea * 1.6) : area > prev.area * 1.2;
+        /* yangi halqa har doim korsatiladi, faqat rad etilgani kichik bolsa emas */
+        console.log('[HL] halqa:', Math.round(area), 'm2 | prev:', prev ? Math.round(prev.area) : 'yoq', '| dismissed:', dismissedRef.current, '| dArea:', Math.round(dArea));
+        /* markaz uzoq bolsa - boshqa halqa, korsatamiz */
+        let _uzoq = false;
+        try {
+          if (prev && prev.loop && prev.loop.length && smooth.length) {
+            const _c1 = prev.loop.reduce((s, p) => ({ latitude: s.latitude + p.latitude / prev.loop.length, longitude: s.longitude + p.longitude / prev.loop.length }), { latitude: 0, longitude: 0 });
+            const _c2 = smooth.reduce((s, p) => ({ latitude: s.latitude + p.latitude / smooth.length, longitude: s.longitude + p.longitude / smooth.length }), { latitude: 0, longitude: 0 });
+            _uzoq = distanceM(_c1, _c2) > 120;
+          }
+        } catch (e) {}
+        const okShow = !prev
+          ? (dismissedRef.current === 0 || area > dArea * 1.15)
+          : (_uzoq || area > prev.area * 1.15 || area < prev.area * 0.85);
         if (okShow) {
           pendingRef.current = { loop: smooth, area: area, point: res.point, cutIndex: res.cutIndex, small: !!res.small, perim: res.perim || 0 };
           setPending({ area: area, small: !!res.small, perim: res.perim || 0 });
