@@ -413,6 +413,8 @@ function ZonaApp() {
   const menuSyncRef = useRef(false);
   const followTimerRef = useRef(null);
   const [follow, setFollow] = useState(true);
+  const queuedRef = useRef([]);
+  const [queuedCount, setQueuedCount] = useState(0);
   const [camHead, setCamHead] = useState(0);
   const [warn, setWarn] = useState(null);
   const moveTimerRef = useRef(null);
@@ -455,12 +457,10 @@ function ZonaApp() {
       if (!sv) { setMustAuth(true); setOnline(true); return; }
     ensureUser()
       .then((u) => {
-        console.log('[EU] natija:', u && u.name, '| id:', u && u.user_id);
         userRef.current = u;
         setUser(u);
         setOnline(true);
         fetchMe(u.user_id).then((m) => {
-          console.log('[ME] serverdan:', m && m.name, '| id:', m && m.user_id);
           setMeStats(m);
           if (m && !m.verified) setMustAuth(true);
       else if (m && m.name && m.name.indexOf('Oyinchi') === 0) setNeedNick(true);
@@ -1747,7 +1747,6 @@ function ZonaApp() {
       if (_pp.length > 0) {
         const _d = distanceM(_pp[_pp.length - 1], pt);
         if (_d > 300) {
-          console.log('[SK] sakrash:', Math.round(_d), 'm - yol tozalandi');
           pathRef.current = [pt];
           setPath([pt]);
           return true;
@@ -1770,7 +1769,6 @@ function ZonaApp() {
         const prev = pendingRef.current;
         const dArea = dismissedAreaRef.current || 0;
         /* yangi halqa har doim korsatiladi, faqat rad etilgani kichik bolsa emas */
-        console.log('[HL] halqa:', Math.round(area), 'm2 | prev:', prev ? Math.round(prev.area) : 'yoq', '| dismissed:', dismissedRef.current, '| dArea:', Math.round(dArea));
         /* markaz uzoq bolsa - boshqa halqa, korsatamiz */
         let _uzoq = false;
         try {
@@ -1780,9 +1778,23 @@ function ZonaApp() {
             _uzoq = distanceM(_c1, _c2) > 120;
           }
         } catch (e) {}
-        const okShow = !prev
-          ? (dismissedRef.current === 0 || area > dArea * 1.15)
-          : (_uzoq || area > prev.area * 1.15 || area < prev.area * 0.85);
+        /* taklif chiqqach qotib turadi - foydalanuvchi javob bergunicha */
+        /* taklif turgan bolsa - yangi halqa navbatga yigiladi */
+        if (prev) {
+          try {
+            const _q = queuedRef.current || [];
+            const _oxir = _q.length ? _q[_q.length - 1] : null;
+            let _yangi = true;
+            if (_oxir && Math.abs(_oxir.area - area) < _oxir.area * 0.10) _yangi = false;
+            if (Math.abs(prev.area - area) < prev.area * 0.10) _yangi = false;
+            if (_yangi) {
+              _q.push({ loop: smooth, area: area, point: res.point, cutIndex: res.cutIndex });
+              queuedRef.current = _q.slice(-6);
+              setQueuedCount(queuedRef.current.length);
+            }
+          } catch (e) {}
+        }
+        const okShow = !prev && (dismissedRef.current === 0 || area > dArea * 1.15);
         if (okShow) {
           pendingRef.current = { loop: smooth, area: area, point: res.point, cutIndex: res.cutIndex, small: !!res.small, perim: res.perim || 0 };
           setPending({ area: area, small: !!res.small, perim: res.perim || 0 });
@@ -1809,6 +1821,9 @@ function ZonaApp() {
   }, [pending]);
 
   const confirmZone = () => {
+    /* zona qabul qilingach dismissed tozalanadi - keyingi halqa korsatilsin */
+    dismissedRef.current = 0;
+    dismissedAreaRef.current = 0;
     const p = pendingRef.current;
     if (!p || sendingRef.current) return;
     sendingRef.current = true;
@@ -2234,6 +2249,32 @@ function ZonaApp() {
     clearBuffer();
     clearBgBuffer();
     readIndexRef.current = 0;
+    /* kutilayotgan va navbatdagi zonalar avtomatik qabul qilinadi */
+    try {
+      if (pendingRef.current && pendingRef.current.area >= MIN_AREA_M2) {
+        await confirmZone();
+      }
+      const _q = queuedRef.current || [];
+      const _uu = userRef.current;
+      for (const _z of _q) {
+        if (!_z || _z.area < MIN_AREA_M2) continue;
+        await new Promise((r) => setTimeout(r, 9000));
+        try {
+          if (_uu && _uu.user_id) {
+            await pushZone(_uu.user_id, _z.loop, _z.area, { duration: 900, distance: 1200, mode: 'walk' });
+            setZones((zz) => {
+              const nz = [...zz, { id: Date.now() + Math.random(), coords: _z.loop, area: _z.area }];
+              saveZones(nz);
+              return nz;
+            });
+          } else {
+            addPending({ id: Date.now(), loop: _z.loop, area: _z.area, dur: 900, dist: 1200 });
+          }
+        } catch (e) {}
+      }
+      queuedRef.current = [];
+      setQueuedCount(0);
+    } catch (e) {}
     pendingRef.current = null;
     setPending(null);
     dismissedRef.current = 0;
@@ -3868,7 +3909,6 @@ function ZonaApp() {
           }
         }}
         onDone={(r) => {
-          console.log('[LG] kirish:', r && r.name, '| yangi:', r && r.new, '| pochta:', r && r.contact);
           setShowLogin(false);
           setMustAuth(false);
           setAskAuth(false);
