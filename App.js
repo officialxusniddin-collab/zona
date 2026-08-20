@@ -1785,8 +1785,15 @@ function ZonaApp() {
             const _q = queuedRef.current || [];
             const _oxir = _q.length ? _q[_q.length - 1] : null;
             let _yangi = true;
-            if (_oxir && Math.abs(_oxir.area - area) < _oxir.area * 0.10) _yangi = false;
-            if (Math.abs(prev.area - area) < prev.area * 0.10) _yangi = false;
+            /* markaz bir xil bolsa - ayni halqa */
+            const _mrk = (arr) => {
+              let la = 0, lo = 0;
+              for (const p of arr) { la += p.latitude; lo += p.longitude; }
+              return { latitude: la / arr.length, longitude: lo / arr.length };
+            };
+            const _cYangi = _mrk(smooth);
+            if (_oxir && _oxir.loop && distanceM(_mrk(_oxir.loop), _cYangi) < 150) _yangi = false;
+            if (prev && prev.loop && distanceM(_mrk(prev.loop), _cYangi) < 150) _yangi = false;
             if (_yangi) {
               _q.push({ loop: smooth, area: area, point: res.point, cutIndex: res.cutIndex });
               queuedRef.current = _q.slice(-6);
@@ -1827,6 +1834,15 @@ function ZonaApp() {
     const p = pendingRef.current;
     if (!p || sendingRef.current) return;
     sendingRef.current = true;
+    /* zona olingach yol kesiladi - eski halqa qayta topilmasin */
+    try {
+      const _ci = p.cutIndex;
+      if (typeof _ci === 'number' && _ci >= 0 && _ci < pathRef.current.length - 1) {
+        const _qolgan = pathRef.current.slice(-2);
+        pathRef.current = _qolgan;
+        setPath([..._qolgan]);
+      }
+    } catch (e) {}
     setTimeout(() => { sendingRef.current = false; }, 25000);
     const u = userRef.current;
     const ha = p.area / 10000;
